@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h2>Edit Post</h2>
+
+{% if error %}
+    <p style="color: red;">
+        {{ error }}
+    </p>
+{% endif %}
+
+<form method="post">
+
+        <input
+        type="hidden"
+        name="csrf_token"
+        value="{{ csrf_token() }}"
+    >
+
+    <p>
+        <label for="title">Title</label><br>
+        <input
+            type="text"
+            id="title"
+            name="title"
+            value="{{ post.title }}"
+            required
+            maxlength="200"
+        >
+    </p>
+
+    <p>
+        <label for="body">Post</label><br>
+        <textarea
+            id="body"
+            name="body"
+            rows="6"
+            required
+        >{{ post.body }}</textarea>
+    </p>
+
+    <p>
+        <label for="category">Category</label><br>
+
+        <select id="category" name="category" required>
+
+            <option value="Event"
+                {% if post.category == "Event" %}selected{% endif %}>
+                Event
+            </option>
+
+            <option value="Services Offered"
+                {% if post.category == "Services Offered" %}selected{% endif %}>
+                Services Offered
+            </option>
+
+            <option value="Lost and Found"
+                {% if post.category == "Lost and Found" %}selected{% endif %}>
+                Lost and Found
+            </option>
+
+            <option value="Free to Good Home"
+                {% if post.category == "Free to Good Home" %}selected{% endif %}>
+                Free to Good Home
+            </option>
+
+            <option value="Selling"
+                {% if post.category == "Selling" %}selected{% endif %}>
+                Selling
+            </option>
+
+            <option value="Announcements"
+                {% if post.category == "Announcements" %}selected{% endif %}>
+                Announcements
+            </option>
+
+        </select>
+    </p>
+
+    <p>
+        <label for="visibility">Visibility</label><br>
+
+        <select id="visibility" name="visibility" required>
+
+            <option value="public"
+                {% if post.visibility == "public" %}selected{% endif %}>
+                Public
+            </option>
+
+            <option value="members"
+                {% if post.visibility == "members" %}selected{% endif %}>
+                Members only
+            </option>
+
+        </select>
+    </p>
+
+    <p>
+        <label>
+            <input
+                type="checkbox"
+                name="comments_enabled"
+                {% if post.comments_enabled %}checked{% endif %}
+            >
+            Allow comments
+        </label>
+    </p>
+
+    <button
+        type="submit"
+        class="post-button"
+    >
+        Save Changes
+    </button>
+
+    <a
+        href="{{ url_for('home') }}"
+        class="post-button"
+    >
+        Cancel
+    </a>
+
+</form>
+
+{% endblock %}

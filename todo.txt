@@ -1,0 +1,42 @@
+todo list
+
+fix crsf with adding comments
+add date time of comments to display
+check that blocked words text is being used in comments
+add counter of bad login attempts and last date time of bad login attempt
+
+
+add logging of everything
+add log rotation
+add admin flag to user 
+only another admin can give user admin flag or revoke
+change seed to add admin
+
+admin can delete any user
+admin can delete any post
+admin can delete any comments
+
+
+add proximity util for search
+add proximit default for user 
+add location text file
+add util for distance calc
+
+enahce search filter to use proximity + search string
+
+admin can change user password
+add flag to use for status, and can be active or suspended
+admin can suspend any other user admin or not but not self
+
+suspended users can not login and get a message to email support 
+suspend user when 5 successive failed logins occur
+after 1st failed wait min of 1 second before allowing agian
+after 2 wait 5 seconds
+after 3 wait 1 min
+after 4 wait 1 hour
+after 5 wait one day before can try to login agian
+
+admin should have some cool reprots to look for attacks
+rate control of posts and comments
+to look for rate attacke and suspend users
+

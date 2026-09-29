@@ -1,0 +1,381 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h2>My Account</h2>
+
+<style>
+
+    .password-check {
+        margin: 4px 0;
+    }
+
+    .check-fail {
+        color: red;
+    }
+
+    .check-pass {
+        color: green;
+    }
+
+    #strength-text {
+        font-weight: bold;
+    }
+
+    .strength-very-weak {
+        color: red;
+    }
+
+    .strength-weak {
+        color: pink;
+    }
+
+    .strength-fair {
+        color: orange;
+    }
+
+    .strength-strong {
+        color: lightgreen;
+    }
+
+    .strength-very-strong {
+        color: green;
+    }
+
+</style>
+
+
+
+<p>
+    <strong>Username:</strong>
+    {{ current_user.username }}
+</p>
+
+<p>
+    <strong>Account created:</strong>
+    {{ current_user.created_at.strftime('%d %b %Y') }}
+</p>
+
+<p>
+    <strong>Last login:</strong>
+
+    {% if current_user.last_login %}
+        {{ current_user.last_login.strftime('%d %b %Y at %H:%M') }}
+    {% else %}
+        Never
+    {% endif %}
+</p>
+
+<hr>
+
+<h3>Change Password</h3>
+
+{% if error %}
+    <p style="color: red;">
+        {{ error }}
+    </p>
+{% endif %}
+
+{% if success %}
+    <p style="color: green;">
+        {{ success }}
+    </p>
+{% endif %}
+
+<form method="post">
+
+        <input
+        type="hidden"
+        name="csrf_token"
+        value="{{ csrf_token() }}"
+    >
+
+
+    <input type="hidden" name="form_type" value="password" >
+
+    <p>
+        <label for="current_password">
+            Current password
+        </label><br>
+
+        <input
+            type="password"
+            id="current_password"
+            name="current_password"
+            required
+        >
+    </p>
+
+    <p>
+        <label for="new_password">
+            New password
+        </label><br>
+
+        <input
+            type="password"
+            id="new_password"
+            name="new_password"
+            required
+        >
+    </p>
+
+    <div id="password-strength">
+
+        <p>
+            <strong>Password strength:</strong>
+            <span id="strength-text">Not entered</span>
+        </p>
+
+        <ul>
+
+        <li id="length-check" class="password-check check-fail">
+            ✗ At least 8 characters
+        </li>
+
+        <li id="uppercase-check" class="password-check check-fail">
+            ✗ At least one capital letter
+        </li>
+
+        <li id="number-check" class="password-check check-fail">
+            ✗ At least one number
+        </li>
+
+        <li id="symbol-check" class="password-check check-fail">
+            ✗ At least one symbol
+        </li>
+
+
+        </ul>
+
+    </div>  
+
+    {% if password_strength %}
+
+        <p>
+            <strong>Password strength:</strong>
+            {{ password_strength }}
+        </p>
+
+    {% endif %}
+
+    <p>
+        <label for="confirm_password">
+            Confirm new password
+        </label><br>
+
+        <input
+            type="password"
+            id="confirm_password"
+            name="confirm_password"
+            required
+        >
+    </p>
+
+    <button
+        type="submit"
+        class="post-button"
+    >
+        Change Password
+    </button>
+
+    <a
+        href="{{ url_for('home') }}"
+        class="post-button"
+    >
+        Cancel
+    </a>
+
+</form>
+
+
+<h3>Security Question</h3>
+
+<p>
+    This question will be used if you forget your password.
+</p>
+
+<form method="post" autocomplete="off">
+
+    <input
+        type="hidden"
+        name="csrf_token"
+        value="{{ csrf_token() }}"
+    >
+
+    <input
+        type="hidden"
+        name="form_type"
+        value="security"
+    >
+
+    <p>
+        <label for="security_question">
+            Security question
+        </label><br>
+
+        <input
+            type="text"
+            id="security_question"
+            name="security_question"
+            value="{{ current_user.security_question }}"
+            maxlength="255"
+            required
+        >
+    </p>
+
+    <p>
+        <label for="security_answer">
+            Security answer
+        </label><br>
+
+        <input
+            type="password"
+            id="security_answer"
+            name="security_answer"
+            maxlength="255"
+            placeholder="Enter your answer"
+            autocomplete="new-password"
+            required
+        >
+    </p>
+
+    <p>
+        <small>
+            Your answer is never displayed and is stored securely.
+        </small>
+    </p>
+
+    <button
+        type="submit"
+        class="post-button"
+    >
+        Save Security Details
+    </button>
+
+</form>
+
+
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/zxcvbn/4.4.2/zxcvbn.js"></script>
+
+<script>
+
+    const passwordInput = document.getElementById("new_password");
+
+    passwordInput.addEventListener("input", function () {
+
+        const password = passwordInput.value;
+
+        const lengthCheck = document.getElementById("length-check");
+        const uppercaseCheck = document.getElementById("uppercase-check");
+        const numberCheck = document.getElementById("number-check");
+        const symbolCheck = document.getElementById("symbol-check");
+        const strengthText = document.getElementById("strength-text");
+
+        // Check password requirements
+
+        const hasLength = password.length >= 8;
+
+        const hasUppercase = /[A-Z]/.test(password);
+
+        const hasNumber = /[0-9]/.test(password);
+
+        const hasSymbol = /[^A-Za-z0-9]/.test(password);
+
+
+        // Update requirement indicators
+
+        
+
+        function updateCheck(element, passed, text) {
+
+            element.textContent =
+                (passed ? "✓ " : "✗ ")
+                + text;
+
+            element.classList.remove(
+                "check-pass",
+                "check-fail"
+            );
+
+            element.classList.add(
+                passed ? "check-pass" : "check-fail"
+            );
+        }
+
+        updateCheck(
+            lengthCheck,
+            hasLength,
+            "At least 8 characters"
+        );
+
+        updateCheck(
+            uppercaseCheck,
+            hasUppercase,
+            "At least one capital letter"
+        );
+
+        updateCheck(
+            numberCheck,
+            hasNumber,
+            "At least one number"
+        );
+
+        updateCheck(
+            symbolCheck,
+            hasSymbol,
+            "At least one symbol"
+        );
+
+
+
+        // Password strength
+
+        if (password.length === 0) {
+
+            strengthText.textContent = "Not entered";
+
+            return;
+        }
+
+        const result = zxcvbn(password);
+
+        const strengthNames = [
+            "Very Weak",
+            "Weak",
+            "Fair",
+            "Strong",
+            "Very Strong"
+        ];
+
+        const strengthClasses = [
+            "strength-very-weak",
+            "strength-weak",
+            "strength-fair",
+            "strength-strong",
+            "strength-very-strong"
+        ];
+
+        strengthText.textContent =
+            strengthNames[result.score];
+
+        strengthText.classList.remove(
+            "strength-very-weak",
+            "strength-weak",
+            "strength-fair",
+            "strength-strong",
+            "strength-very-strong"
+        );
+
+        strengthText.classList.add(
+            strengthClasses[result.score]
+        );
+
+
+    });
+
+</script>
+
+
+
+{% endblock %}
