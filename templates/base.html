@@ -5,232 +5,215 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Neighbourhood Notice Board</title>
 
-<style>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: auto;
+            padding: 20px;
+        }
 
-    body {
-        font-family: Arial, sans-serif;
-        max-width: 1000px;
-        margin: auto;
-        padding: 20px;
-    }
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #ccc;
+        }
 
-    .topbar {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 20px;
-        padding-bottom: 10px;
-        border-bottom: 1px solid #ccc;
-    }
+        .menu {
+            margin-bottom: 20px;
+        }
 
-    .menu {
-        margin-bottom: 20px;
-    }
+        .menu a {
+            display: inline-block;
+            padding: 8px 12px;
+            margin-right: 8px;
+            margin-bottom: 8px;
+            background: #e6e6e6;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            text-decoration: none;
+            color: black;
+            font-weight: bold;
+            transition: all 0.2s ease;
+        }
 
-    .menu a {
-        display: inline-block;
-        padding: 8px 12px;
-        margin-right: 8px;
-        margin-bottom: 8px;
-        background: #e6e6e6;
-        border: 1px solid #ccc;
-        border-radius: 6px;
-        text-decoration: none;
-        color: black;
-        font-weight: bold;
-        transition: all 0.2s ease;
-    }
+        .menu a:hover {
+            background: #d9d9d9;
+        }
 
-    .menu a:hover {
-        background: #d9d9d9;
-    }
+        .menu a.active {
+            background: #007bff;
+            border-color: #007bff;
+            color: white;
+        }
 
-    .menu a.active {
-        background: #007bff;
-        border-color: #007bff;
-        color: white;
-    }
+        .post {
+            border: 1px solid #ccc;
+            margin-bottom: 15px;
+            padding: 10px;
+        }
 
-    .post {
-        border: 1px solid #ccc;
-        margin-bottom: 15px;
-        padding: 10px;
-    }
+        .post-button {
+            display: inline-block;
+            box-sizing: border-box;
+            padding: 6px 12px;
+            margin-right: 6px;
+            background: #e6e6e6;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            text-decoration: none;
+            color: black;
+            font-family: Arial, sans-serif;
+            font-size: 14px;
+            line-height: normal;
+            cursor: pointer;
+            vertical-align: middle;
+            appearance: none;
+            -webkit-appearance: none;
+        }
 
-    .post-button {
-        display: inline-block;
-        box-sizing: border-box;
-        padding: 6px 12px;
-        margin-right: 6px;
-        background: #e6e6e6;
-        border: 1px solid #ccc;
-        border-radius: 6px;
-        text-decoration: none;
-        color: black;
-        font-family: Arial, sans-serif;
-        font-size: 14px;
-        line-height: normal;
-        cursor: pointer;
-        vertical-align: middle;
-        appearance: none;
-        -webkit-appearance: none;
-    }
+        .post-button:hover {
+            background: #d9d9d9;
+        }
 
-    .post-button:hover {
-        background: #d9d9d9;
-    }
+        .category {
+            color: #666;
+            font-size: 0.9em;
+        }
 
-    .category {
-        color: #666;
-        font-size: 0.9em;
-    }
+        .comment-count {
+            color: #666;
+            font-size: 0.9em;
+            margin-bottom: 10px;
+        }
 
-    .comment-count {
-        color: #666;
-        font-size: 0.9em;
-        margin-bottom: 10px;
-    }
+        .user-info {
+            font-size: 0.9em;
+        }
 
-    .user-info {
-        font-size: 0.9em;
-    }
+        .user-info a {
+            margin-left: 10px;
+        }
 
-    .user-info {
-        font-size: 0.9em;
-    }
+        .comment {
+            margin-top: 10px;
+            padding: 8px;
+            background: #f5f5f5;
+            border-radius: 6px;
+        }
 
-    .user-info a {
-        margin-left: 10px;
-    }
+        .pick-button {
+            border: none;
+            background: none;
+            padding: 4px 8px;
+            cursor: pointer;
+            font-size: 14px;
+        }
 
-    .comment {
-    margin-top: 10px;
-    padding: 8px;
-    background: #f5f5f5;
-    border-radius: 6px;
-    }
+        .pick-button.picked {
+            color: blue;
+            font-weight: bold;
+        }
 
- .pick-button {
-        border: none;
-        background: none;
-        padding: 4px 8px;
-        cursor: pointer;
-        font-size: 14px;
-    }
+        .comment-time {
+            font-size: 0.8em;
+            color: #666;
+        }
 
-    .pick-button.picked {
-        color: blue;
-        font-weight: bold;
-    }
+        .comment-meta-separator {
+            margin: 0 0.5rem;
+            color: #999;
+        }
 
-@media (max-width: 600px) {
+        .comment-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
 
-    body {
-        font-size: 18px;
-    }
+        .inline-form {
+            display: inline;
+            margin: 0;
+        }
 
-    .topbar {
-        display: block;
-    }
+        @media (max-width: 600px) {
+            body {
+                font-size: 18px;
+            }
 
-    .topbar h1 {
-        font-size: 26px;
-    }
+            .topbar {
+                display: block;
+            }
 
-    .user-info {
-        font-size: 17px;
-    }
+            .topbar h1 {
+                font-size: 26px;
+            }
 
-    .menu a {
-        font-size: 17px;
-        padding: 10px 14px;
-    }
+            .user-info {
+                font-size: 17px;
+            }
 
-    .post h2 {
-        font-size: 23px;
-    }
+            .menu a {
+                font-size: 17px;
+                padding: 10px 14px;
+            }
 
-    .category {
-        font-size: 16px;
-    }
+            .post h2 {
+                font-size: 23px;
+            }
 
-    .comment-count {
-    font-size: 16px;
-    }
+            .category {
+                font-size: 16px;
+            }
 
-    .post-button,
-    .pick-button {
-        font-size: 17px;
-        padding: 9px 13px;
-    }
-}
+            .comment-count {
+                font-size: 16px;
+            }
 
-
-</style>
-
-
+            .post-button,
+            .pick-button {
+                font-size: 17px;
+                padding: 9px 13px;
+            }
+        }
+    </style>
 </head>
+
 <body>
+    <div class="topbar">
+        <h1>Neighbourhood Notice Board</h1>
 
-<div class="topbar">
+        <div class="user-info">
+            {% if current_user.is_authenticated %}
+                Logged in as <strong>{{ current_user.username }}</strong>
 
+                <a href="{{ url_for('create_post') }}">New Post</a>
+                <a href="{{ url_for('account') }}">My Account</a>
+                <a href="{{ url_for('logout') }}">Logout</a>
+            {% else %}
+                <a href="{{ url_for('login') }}">Login</a>
+                <a href="{{ url_for('register') }}">Register</a>
+            {% endif %}
+        </div>
+    </div>
 
-<h1>Neighbourhood Notice Board</h1>
+    {% block content %}
+    {% endblock %}
 
-<div class="user-info">
+    <script>
+        function toggleComments(postId) {
+            const area = document.getElementById("comments-" + postId);
 
-    {% if current_user.is_authenticated %}
-
-        Logged in as <strong>{{ current_user.username }}</strong>
-
-        <a href="{{ url_for('create_post') }}">
-            New Post
-        </a>
-
-        <a href="{{ url_for('account') }}">
-            My Account
-        </a>
-
-        <a href="{{ url_for('logout') }}">
-            Logout
-        </a>
-
-    {% else %}
-
-        <a href="{{ url_for('login') }}">
-            Login
-        </a>
-        <a href="{{ url_for('register') }}">Register</a>
-    {% endif %}
-
-</div>
-
-
-</div>
-
-{% block content %}
-{% endblock %}
-
-<script>
-
-function toggleComments(postId) {
-
-    const area = document.getElementById(
-        "comments-" + postId
-    );
-
-    if (area.style.display === "none") {
-
-        area.style.display = "block";
-
-    } else {
-
-        area.style.display = "none";
-    }
-}
-
-</script>
-
-
+            if (area.style.display === "none") {
+                area.style.display = "block";
+            } else {
+                area.style.display = "none";
+            }
+        }
+    </script>
 </body>
 </html>

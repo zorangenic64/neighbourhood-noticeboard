@@ -56,7 +56,7 @@
             class="post-button"
             onclick="toggleComments({{ post.id }})"
         >
-            Show Comments
+            Toggle Comments
         </button>
 
     {% endif %}
@@ -73,36 +73,38 @@
         <div class="comment">
 
             <strong>{{ comment.author.username }}</strong>
+            <span class="comment-meta-separator">|</span>
+            <span class="comment-time">
+                {{ comment.created_at.strftime('%d %b %Y %H:%M') }}
+            </span>
+
             <br>
 
             {{ comment.body }}
 
-            <br><br>
+            {% if current_user.is_authenticated and comment.author_id == current_user.id %}
+                <div class="comment-actions">
+                    <a href="{{ url_for('edit_comment', comment_id=comment.id) }}">Edit</a>
 
-            {% if current_user.is_authenticated
-                  and comment.author_id == current_user.id %}
-
-                <a href="{{ url_for('edit_comment', comment_id=comment.id) }}">Edit</a>
-
-                <form
-                    method="post"
-                    action="{{ url_for('delete_comment', comment_id=comment.id) }}"
-                >
-                    <input
-                        type="hidden"
-                        name="csrf_token"
-                        value="{{ csrf_token() }}"
+                    <form
+                        method="post"
+                        action="{{ url_for('delete_comment', comment_id=comment.id) }}"
+                        class="inline-form"
                     >
+                        <input
+                            type="hidden"
+                            name="csrf_token"
+                            value="{{ csrf_token() }}"
+                        >
 
-                    <button
-                        type="submit"
-                        class="post-button"
-                    >
-                        Delete
-                    </button>
-
-                </form>
-
+                        <button
+                            type="submit"
+                            class="post-button"
+                        >
+                            Delete
+                        </button>
+                    </form>
+                </div>
             {% endif %}
 
         </div>

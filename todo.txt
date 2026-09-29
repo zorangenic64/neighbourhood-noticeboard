@@ -1,6 +1,6 @@
 todo list
 
-fix crsf with adding comments
+fix crsf with adding comments - done
 add date time of comments to display
 check that blocked words text is being used in comments
 add counter of bad login attempts and last date time of bad login attempt
