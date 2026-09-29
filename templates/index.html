@@ -82,10 +82,7 @@
             {% if current_user.is_authenticated
                   and comment.author_id == current_user.id %}
 
-                <a
-                    href="{{ url_for('edit_comment', comment_id=comment.id) }}"
-                    Edit
-                </a>
+                <a href="{{ url_for('edit_comment', comment_id=comment.id) }}">Edit</a>
 
                 <form
                     method="post"
@@ -116,34 +113,11 @@
 
 {% if current_user.is_authenticated and post.comments_enabled %}
 
-    <form
-        method="post"
-        action="{{ url_for('add_comment', post_id=post.id) }}"
-         name="csrf_token"
-            value="{{ csrf_token() }}"
-        >
-
-        <input
-            type="text"
-            name="body"
-            placeholder="Write a comment..."
-            required
-        >
-
-         <input
-            type="hidden"
-            name="csrf_token"
-            value="{{ csrf_token() }}"
-        >
-
-        <button
-            type="submit"
-            class="post-button"
-        >
-            Add Comment
-        </button>
-
-    </form>
+<form method="post" action="{{ url_for('add_comment', post_id=post.id) }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="text" name="body" placeholder="Write a comment..." required>
+    <button type="submit" class="post-button">Add Comment</button>
+</form>
 
 {% endif %}
 
