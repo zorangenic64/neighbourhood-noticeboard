@@ -1,8 +1,18 @@
 todo list
 
 fix crsf with adding comments - done
-add date time of comments to display
-check that blocked words text is being used in comments
+add date time of comments to display - done
+check that blocked words text is being used in comments - done
+fix as button both edit and delete for comments
+
+add proximity util for search
+add proximit default for user 
+add location text file
+add util for distance calc
+enahce search filter to use proximity + search string
+
+fix forms to register, post and edit post and comment and account 
+
 add counter of bad login attempts and last date time of bad login attempt
 
 
@@ -17,12 +27,6 @@ admin can delete any post
 admin can delete any comments
 
 
-add proximity util for search
-add proximit default for user 
-add location text file
-add util for distance calc
-
-enahce search filter to use proximity + search string
 
 admin can change user password
 add flag to use for status, and can be active or suspended

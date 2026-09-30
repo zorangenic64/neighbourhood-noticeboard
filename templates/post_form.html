@@ -1,0 +1,49 @@
+<form method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <label>Title</label>
+    <input type="text" name="title" value="{{ post.title if post else '' }}" required>
+
+    <label>Category</label>
+    <select name="category">
+        <option value="Event" {% if post and post.category == 'Event' %}selected{% endif %}>Event</option>
+        <option value="Services Offered" {% if post and post.category == 'Services Offered' %}selected{% endif %}>Services Offered</option>
+        <option value="Lost and Found" {% if post and post.category == 'Lost and Found' %}selected{% endif %}>Lost and Found</option>
+        <option value="Free to Good Home" {% if post and post.category == 'Free to Good Home' %}selected{% endif %}>Free to Good Home</option>
+        <option value="Selling" {% if post and post.category == 'Selling' %}selected{% endif %}>Selling</option>
+        <option value="Announcements" {% if post and post.category == 'Announcements' %}selected{% endif %}>Announcements</option>
+    </select>
+
+    <label>Visibility</label>
+    <select name="visibility">
+        <option value="public" {% if post and post.visibility == 'public' %}selected{% endif %}>Public</option>
+        <option value="members" {% if post and post.visibility == 'members' %}selected{% endif %}>Members only</option>
+    </select>
+
+    <label>Location</label>
+    <select name="location" required>
+        {% for loc in locations %}
+            <option value="{{ loc }}"
+                {% if post and post.location == loc %}selected
+                {% elif not post and loc == current_user.default_location %}selected
+                {% endif %}>
+                {{ loc }}
+            </option>
+        {% endfor %}
+    </select>
+
+    <label>
+        <input
+            type="checkbox"
+            name="comments_enabled"
+            value="1"
+            {% if post and post.comments_enabled %}checked{% endif %}
+        >
+        Enable comments
+    </label>
+
+    <label>Body</label>
+    <textarea name="body" required>{{ post.body if post else '' }}</textarea>
+
+    <button type="submit">Save</button>
+</form>

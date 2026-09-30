@@ -19,6 +19,12 @@ class User(UserMixin, db.Model):
         nullable=False
     )
 
+    default_location = db.Column(
+        db.String(120),
+        nullable=False,
+        default="Unknown"
+    )
+
     created_at = db.Column(
         db.DateTime,
         default=datetime.utcnow,
@@ -47,10 +53,10 @@ class User(UserMixin, db.Model):
     )
 
     picked_posts = db.relationship(
-    "PostPick",
-    backref="user",
-    lazy=True,
-    cascade="all, delete-orphan"
+        "PostPick",
+        backref="user",
+        lazy=True,
+        cascade="all, delete-orphan"
     )
 
     comments = db.relationship(
@@ -59,6 +65,7 @@ class User(UserMixin, db.Model):
         lazy=True,
         cascade="all, delete-orphan"
     )
+
 
 class Post(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -78,14 +85,21 @@ class Post(db.Model):
         nullable=False
     )
 
+    location = db.Column(
+        db.String(120),
+        nullable=False,
+        default="Unknown"
+    )
+
     visibility = db.Column(
         db.String(20),
         nullable=False,
-        default="members"
+        default="public"
     )
 
     comments_enabled = db.Column(
         db.Boolean,
+        nullable=False,
         default=False
     )
 
@@ -101,10 +115,10 @@ class Post(db.Model):
     )
 
     picks = db.relationship(
-    "PostPick",
-    backref="post",
-    lazy=True,
-    cascade="all, delete-orphan"
+        "PostPick",
+        backref="post",
+        lazy=True,
+        cascade="all, delete-orphan"
     )
 
     comments = db.relationship(
@@ -114,8 +128,8 @@ class Post(db.Model):
         cascade="all, delete-orphan"
     )
 
-class PostPick(db.Model):
 
+class PostPick(db.Model):
     id = db.Column(
         db.Integer,
         primary_key=True
@@ -147,8 +161,8 @@ class PostPick(db.Model):
         ),
     )
 
-class Comment(db.Model):
 
+class Comment(db.Model):
     id = db.Column(
         db.Integer,
         primary_key=True
@@ -157,6 +171,12 @@ class Comment(db.Model):
     body = db.Column(
         db.Text,
         nullable=False
+    )
+
+    location = db.Column(
+        db.String(120),
+        nullable=False,
+        default="Unknown"
     )
 
     created_at = db.Column(

@@ -105,6 +105,34 @@
             border-radius: 6px;
         }
 
+        .comment-header {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 6px;
+        }
+
+        .comment-time {
+            font-size: 0.8em;
+            color: #666;
+        }
+
+        .comment-meta-separator {
+            color: #999;
+        }
+
+        .comment-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 8px;
+        }
+
+        .comment-form {
+            margin-top: 12px;
+        }
+
         .pick-button {
             border: none;
             background: none;
@@ -118,26 +146,49 @@
             font-weight: bold;
         }
 
-        .comment-time {
-            font-size: 0.8em;
+        .post-meta {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9em;
             color: #666;
+            margin-bottom: 10px;
         }
 
-        .comment-meta-separator {
-            margin: 0 0.5rem;
+        .meta-separator {
             color: #999;
         }
 
-        .comment-actions {
+        .post-actions {
             display: flex;
+            flex-wrap: wrap;
             align-items: center;
             gap: 10px;
-            margin-top: 10px;
+            margin-top: 12px;
+            margin-bottom: 12px;
         }
 
         .inline-form {
             display: inline;
             margin: 0;
+        }
+
+        .search-bar {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin: 12px 0 18px 0;
+        }
+
+        .search-bar input,
+        .search-bar select {
+            padding: 8px 10px;
+            font-size: 14px;
+        }
+
+        .search-bar input {
+            flex: 1;
         }
 
         @media (max-width: 600px) {
@@ -205,15 +256,38 @@
     {% endblock %}
 
     <script>
+        function getCommentStateKey(postId) {
+            return "comments_open_" + postId;
+        }
+
+        function applyCommentState(postId, isOpen) {
+            const area = document.getElementById("comments-" + postId);
+            if (!area) return;
+            area.style.display = isOpen ? "block" : "none";
+            localStorage.setItem(getCommentStateKey(postId), isOpen ? "1" : "0");
+        }
+
         function toggleComments(postId) {
             const area = document.getElementById("comments-" + postId);
+            if (!area) return;
 
-            if (area.style.display === "none") {
-                area.style.display = "block";
-            } else {
-                area.style.display = "none";
-            }
+            const currentlyOpen = area.style.display !== "none";
+            applyCommentState(postId, !currentlyOpen);
         }
+
+        document.addEventListener("DOMContentLoaded", function () {
+            document.querySelectorAll("[id^='comments-']").forEach(function (area) {
+                const postId = area.id.replace("comments-", "");
+                const saved = localStorage.getItem(getCommentStateKey(postId));
+
+                if (saved === null) {
+                    area.style.display = "none";
+                    return;
+                }
+
+                area.style.display = saved === "1" ? "block" : "none";
+            });
+        });
     </script>
 </body>
 </html>

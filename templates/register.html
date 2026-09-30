@@ -51,161 +51,31 @@
 {% endif %}
 
 <form method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
+    <label>Username</label>
+    <input type="text" name="username" required>
 
-        <input
-        type="hidden"
-        name="csrf_token"
-        value="{{ csrf_token() }}"
-    >
+    <label>Password</label>
+    <input type="password" name="password" required>
 
+    <label>Confirm Password</label>
+    <input type="password" name="confirm_password" required>
 
-    <p>
-        <label for="username">
-            Username
-        </label><br>
+    <label>Security Question</label>
+    <input type="text" name="security_question" required>
 
-        <input
-            type="text"
-            id="username"
-            name="username"
-            maxlength="80"
-            required
-        >
-    </p>    
+    <label>Security Answer</label>
+    <input type="text" name="security_answer" required>
 
-    <div
-        id="username-feedback"
-        style="margin-top: -10px; margin-bottom: 15px;"
-    ></div>
-        
+    <label>Default Location</label>
+    <select name="default_location" required>
+        {% for loc in locations %}
+            <option value="{{ loc }}">{{ loc }}</option>
+        {% endfor %}
+    </select>
 
-
-    <p>
-        <label for="password">
-            Password
-        </label><br>
-
-        <input
-            type="password"
-            id="password"
-            name="password"
-            autocomplete="new-password"
-            required
-        >
-    </p>
-
-    <div id="password-strength">
-
-        <p>
-            <strong>Password strength:</strong>
-            <span id="strength-text">Not entered</span>
-        </p>
-
-        <ul>
-
-            <li
-                id="length-check"
-                class="password-check check-fail"
-            >
-                ✗ At least 8 characters
-            </li>
-
-            <li
-                id="uppercase-check"
-                class="password-check check-fail"
-            >
-                ✗ At least one capital letter
-            </li>
-
-            <li
-                id="number-check"
-                class="password-check check-fail"
-            >
-                ✗ At least one number
-            </li>
-
-            <li
-                id="symbol-check"
-                class="password-check check-fail"
-            >
-                ✗ At least one symbol
-            </li>
-
-        </ul>
-
-    </div>
-
-    <p>
-        <label for="confirm_password">
-            Confirm password
-        </label><br>
-
-        <input
-            type="password"
-            id="confirm_password"
-            name="confirm_password"
-            autocomplete="new-password"
-            required
-        >
-    </p>
-
-    <h3>Security Question</h3>
-
-    <p>
-        This question will be used if you forget your password.
-    </p>
-
-    <p>
-        <label for="security_question">
-            Security question
-        </label><br>
-
-        <input
-            type="text"
-            id="security_question"
-            name="security_question"
-            maxlength="255"
-            required
-        >
-    </p>
-
-    <p>
-        <label for="security_answer">
-            Security answer
-        </label><br>
-
-        <input
-            type="password"
-            id="security_answer"
-            name="security_answer"
-            maxlength="255"
-            autocomplete="new-password"
-            required
-        >
-    </p>
-
-    <p>
-        <small>
-            Your security answer is never displayed
-            and is stored securely.
-        </small>
-    </p>
-
-    <button
-        type="submit"
-        class="post-button"
-    >
-        Register
-    </button>
-
-    <a
-        href="{{ url_for('login') }}"
-        class="post-button"
-    >
-        Cancel
-    </a>
-
+    <button type="submit">Register</button>
 </form>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/zxcvbn/4.4.2/zxcvbn.js"></script>

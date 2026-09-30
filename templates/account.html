@@ -378,4 +378,21 @@
 
 
 
+<h3>Default Location</h3>
+
+<form method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <label>Default Location</label>
+    <select name="default_location">
+        {% for loc in locations %}
+            <option value="{{ loc }}" {% if loc == current_user.default_location %}selected{% endif %}>
+                {{ loc }}
+            </option>
+        {% endfor %}
+    </select>
+
+    <button type="submit">Save</button>
+</form>
+
 {% endblock %}

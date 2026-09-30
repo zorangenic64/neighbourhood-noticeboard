@@ -24,6 +24,12 @@ from zxcvbn import zxcvbn
 
 from utils.text_filter import contains_blocked_word
 
+from utils.location_data import load_location_choices
+
+from utils.proximity import post_is_within_distance
+
+from sqlalchemy import or_
+
 app = Flask(__name__)
 
 
@@ -50,53 +56,58 @@ def load_user(user_id):
 
 @app.route("/")
 def home():
+    selected_category = request.args.get("category")
+    picked_filter = request.args.get("picked")
+    search_text = request.args.get("search", "").strip()
+    distance = request.args.get("distance", "Any")
 
-    category = request.args.get("category")
-    picked = request.args.get("picked")
+    query = Post.query
 
+    if selected_category:
+        query = query.filter(Post.category == selected_category)
+
+    if picked_filter == "1" and current_user.is_authenticated:
+        picked_post_ids = [
+            p.post_id for p in current_user.picked_posts
+        ]
+        if picked_post_ids:
+            query = query.filter(Post.id.in_(picked_post_ids))
+        else:
+            query = query.filter(Post.id.in_([]))
+
+    # text search: tokens separated by spaces are ANDed across title and body
+    if search_text:
+        tokens = search_text.split()
+        for token in tokens:
+            term = f"%{token}%"
+            query = query.filter(
+                or_(
+                    Post.title.ilike(term),
+                    Post.body.ilike(term)
+                )
+            )
+
+    posts = query.order_by(Post.created_at.desc()).all()
+
+    if current_user.is_authenticated and distance != "Any":
+        user_loc = current_user.default_location
+        posts = [
+            post for post in posts
+            if post_is_within_distance(post.location, user_loc, distance)
+        ]
+
+    picked_post_ids = []
     if current_user.is_authenticated:
-        query = Post.query
-    else:
-        query = Post.query.filter_by(
-            visibility="public"
-        )
-
-    if category:
-        query = query.filter_by(
-            category=category
-        )
-
-    if picked and current_user.is_authenticated:
-
-        query = query.join(
-            PostPick,
-            Post.id == PostPick.post_id
-        ).filter(
-            PostPick.user_id == current_user.id
-        )
-
-
-    posts = query.order_by(
-        Post.created_at.desc()
-    ).all()
-
-    picked_post_ids = set()
-
-    if current_user.is_authenticated:
-
-        picked_post_ids = {
-            pick.post_id
-            for pick in PostPick.query.filter_by(
-                user_id=current_user.id
-            ).all()
-        }
+        picked_post_ids = [p.post_id for p in current_user.picked_posts]
 
     return render_template(
         "index.html",
         posts=posts,
-        selected_category=category,
+        selected_category=selected_category,
+        picked_filter=bool(picked_filter == "1"),
         picked_post_ids=picked_post_ids,
-        picked_filter=picked
+        search_text=search_text,
+        distance=distance
     )
 
 @app.route("/login", methods=["GET", "POST"])
@@ -448,293 +459,114 @@ def reset_password():
 
 @app.route("/register", methods=["GET", "POST"])
 def register():
-
     error = None
+    locations = load_location_choices()
 
     if request.method == "POST":
+        username = request.form["username"].strip()
+        password = request.form["password"]
+        confirm_password = request.form["confirm_password"]
+        security_question = request.form["security_question"]
+        security_answer = request.form["security_answer"]
+        default_location = request.form.get("default_location", "Unknown")
 
-        username = request.form.get(
-            "username",
-            ""
-        ).strip()
+        if default_location not in locations:
+            default_location = "Unknown"
 
-        password = request.form.get(
-            "password",
-            ""
-        )
-
-        confirm_password = request.form.get(
-            "confirm_password",
-            ""
-        )
-
-        security_question = request.form.get(
-            "security_question",
-            ""
-        ).strip()
-
-        security_answer = request.form.get(
-            "security_answer",
-            ""
-        ).strip()
-
-        # Check username
-
-        if not username:
-            error = "Username cannot be empty."
-
-        elif contains_blocked_word(username):
-            error = "That username is not allowed."
-
-        elif User.query.filter_by(
-            username=username
-        ).first():
-            error = "That username is already taken."
-
-        # Check password
-
-        elif not password:
-            error = "Password cannot be empty."
-
-        elif password != confirm_password:
+        if password != confirm_password:
             error = "Passwords do not match."
-
-        # Check password requirements
-
         else:
-
-            has_minimum_length = len(password) >= 8
-
-            has_uppercase = any(
-                character.isupper()
-                for character in password
-            )
-
-            has_digit = any(
-                character.isdigit()
-                for character in password
-            )
-
-            has_symbol = any(
-                not character.isalnum()
-                for character in password
-            )
-
-            strength_result = zxcvbn(password)
-            password_score = strength_result["score"]
-
-            if not has_minimum_length:
-                error = (
-                    "Password must be at least "
-                    "8 characters long."
-                )
-
-            elif not has_uppercase:
-                error = (
-                    "Password must contain at least "
-                    "one capital letter."
-                )
-
-            elif not has_digit:
-                error = (
-                    "Password must contain at least "
-                    "one number."
-                )
-
-            elif not has_symbol:
-                error = (
-                    "Password must contain at least "
-                    "one symbol."
-                )
-
-            elif password_score < 2:
-                error = (
-                    "This password is too easy to guess. "
-                    "Please choose a stronger password."
-                )
-
-            # Check security details
-
-            elif not security_question:
-                error = (
-                    "Security question cannot be empty."
-                )
-
-            elif not security_answer:
-                error = (
-                    "Security answer cannot be empty."
-                )
-
+            existing = User.query.filter_by(username=username).first()
+            if existing:
+                error = "Username already exists."
             else:
-
                 user = User(
                     username=username,
-                    password_hash=generate_password_hash(
-                        password
-                    ),
+                    password_hash=generate_password_hash(password),
                     security_question=security_question,
-                    security_answer_hash=generate_password_hash(
-                        security_answer.lower()
-                    ),
-                    created_at=datetime.utcnow()
+                    security_answer_hash=generate_password_hash(security_answer),
+                    default_location=default_location
                 )
-
                 db.session.add(user)
                 db.session.commit()
-
                 return redirect(url_for("login"))
 
     return render_template(
         "register.html",
-        error=error
+        error=error,
+        locations=locations
     )
 
 @app.route("/post/new", methods=["GET", "POST"])
 @login_required
 def create_post():
-
+    locations = load_location_choices()
     error = None
 
     if request.method == "POST":
+        title = request.form["title"].strip()
+        body = request.form["body"].strip()
+        category = request.form["category"]
+        location = request.form.get("location", current_user.default_location)
+        visibility = request.form.get("visibility", "public")
+        comments_enabled = request.form.get("comments_enabled") == "1"
 
-        title = request.form.get(
-            "title",
-            ""
-        ).strip()
+        if location not in locations:
+            location = current_user.default_location
 
-        body = request.form.get(
-            "body",
-            ""
-        ).strip()
+        if not title or not body:
+            error = "Title and body are required."
 
-        category = request.form.get(
-            "category",
-            ""
+        post = Post(
+            title=title,
+            body=body,
+            category=category,
+            location=location,
+            visibility=visibility,
+            comments_enabled=comments_enabled,
+            author_id=current_user.id
         )
-
-        visibility = request.form.get(
-            "visibility",
-            ""
-        )
-
-        comments_enabled = (
-            request.form.get("comments_enabled") == "on"
-        )
-
-        if not title:
-
-            error = "Title cannot be empty."
-
-        elif contains_blocked_word(title):
-
-            error = "The post title contains a word that is not allowed."
-
-        elif not body:
-
-            error = "Description cannot be empty."
-
-        elif contains_blocked_word(body):
-
-            error = (
-                "The post description contains a word "
-                "that is not allowed."
-            )
-
-        else:
-
-            post = Post(
-                title=title,
-                body=body,
-                category=category,
-                visibility=visibility,
-                comments_enabled=comments_enabled,
-                author_id=current_user.id
-            )
-
-            db.session.add(post)
-            db.session.commit()
-
-            return redirect(url_for("home"))
+        db.session.add(post)
+        db.session.commit()
+        return redirect(url_for("home"))
 
     return render_template(
-        "create_post.html",
+        "post_form.html",
+        post=None,
+        locations=locations,
+        current_user=current_user,
         error=error
     )
 
 @app.route("/post/<int:post_id>/edit", methods=["GET", "POST"])
 @login_required
 def edit_post(post_id):
-
     post = Post.query.get_or_404(post_id)
+    error = None
+    locations = load_location_choices()
 
     if post.author_id != current_user.id:
         abort(403)
 
-    error = None
-
     if request.method == "POST":
+        post.title = request.form["title"].strip()
+        post.body = request.form["body"].strip()
+        post.category = request.form["category"]
+        post.location = request.form.get("location", post.location)
+        post.visibility = request.form.get("visibility", post.visibility)
+        post.comments_enabled = request.form.get("comments_enabled") == "1"
 
-        title = request.form.get(
-            "title",
-            ""
-        ).strip()
+        if post.location not in locations:
+            post.location = current_user.default_location
 
-        body = request.form.get(
-            "body",
-            ""
-        ).strip()
-
-        category = request.form.get(
-            "category",
-            ""
-        )
-
-        visibility = request.form.get(
-            "visibility",
-            ""
-        )
-
-        comments_enabled = (
-            request.form.get("comments_enabled") == "on"
-        )
-
-        if not title:
-
-            error = "Title cannot be empty."
-
-        elif contains_blocked_word(title):
-
-            error = (
-                "The post title contains a word "
-                "that is not allowed."
-            )
-
-        elif not body:
-
-            error = "Description cannot be empty."
-
-        elif contains_blocked_word(body):
-
-            error = (
-                "The post description contains a word "
-                "that is not allowed."
-            )
-
-        else:
-
-            post.title = title
-            post.body = body
-            post.category = category
-            post.visibility = visibility
-            post.comments_enabled = comments_enabled
-
-            db.session.commit()
-
-            return redirect(url_for("home"))
+        db.session.commit()
+        return redirect(url_for("home"))
 
     return render_template(
-        "edit_post.html",
+        "post_form.html",
         post=post,
+        locations=locations,
+        current_user=current_user,
         error=error
     )
 
@@ -798,199 +630,24 @@ def logout():
 @app.route("/account", methods=["GET", "POST"])
 @login_required
 def account():
-
     error = None
-    success = None
-    password_strength = None
-    password_score = None
+    locations = load_location_choices()
 
     if request.method == "POST":
+        chosen = request.form.get("default_location", current_user.default_location)
 
-        form_type = request.form.get("form_type")
-
-        # -------------------------------------------------
-        # SECURITY QUESTION / ANSWER
-        # -------------------------------------------------
-
-        if form_type == "security":
-
-            security_question = request.form.get(
-                "security_question",
-                ""
-            ).strip()
-
-            security_answer = request.form.get(
-                "security_answer",
-                ""
-            ).strip()
-
-            if not security_question:
-
-                error = (
-                    "Security question cannot be empty."
-                )
-
-            elif not security_answer:
-
-                error = (
-                    "Security answer cannot be empty."
-                )
-
-            else:
-
-                current_user.security_question = (
-                    security_question
-                )
-
-                current_user.security_answer_hash = (
-                    generate_password_hash(
-                        security_answer.lower()
-                    )
-                )
-
-                db.session.commit()
-
-                success = (
-                    "Security question and answer "
-                    "updated successfully."
-                )
-
-        # -------------------------------------------------
-        # PASSWORD
-        # -------------------------------------------------
-
-        elif form_type == "password":
-
-            current_password = request.form.get(
-                "current_password",
-                ""
-            )
-
-            new_password = request.form.get(
-                "new_password",
-                ""
-            )
-
-            confirm_password = request.form.get(
-                "confirm_password",
-                ""
-            )
-
-            if not check_password_hash(
-                current_user.password_hash,
-                current_password
-            ):
-
-                error = (
-                    "Current password is incorrect."
-                )
-
-            elif new_password != confirm_password:
-
-                error = (
-                    "New passwords do not match."
-                )
-
-            else:
-
-                has_minimum_length = (
-                    len(new_password) >= 8
-                )
-
-                has_uppercase = any(
-                    character.isupper()
-                    for character in new_password
-                )
-
-                has_digit = any(
-                    character.isdigit()
-                    for character in new_password
-                )
-
-                has_symbol = any(
-                    not character.isalnum()
-                    for character in new_password
-                )
-
-                strength_result = zxcvbn(
-                    new_password
-                )
-
-                password_score = (
-                    strength_result["score"]
-                )
-
-                strength_names = {
-                    0: "Very Weak",
-                    1: "Weak",
-                    2: "Fair",
-                    3: "Strong",
-                    4: "Very Strong"
-                }
-
-                password_strength = (
-                    strength_names[password_score]
-                )
-
-                if not has_minimum_length:
-
-                    error = (
-                        "Password must be at least "
-                        "8 characters long."
-                    )
-
-                elif not has_uppercase:
-
-                    error = (
-                        "Password must contain at least "
-                        "one capital letter."
-                    )
-
-                elif not has_digit:
-
-                    error = (
-                        "Password must contain at least "
-                        "one number."
-                    )
-
-                elif not has_symbol:
-
-                    error = (
-                        "Password must contain at least "
-                        "one symbol."
-                    )
-
-                elif password_score < 2:
-
-                    error = (
-                        "This password is too easy to guess. "
-                        "Please choose a stronger password."
-                    )
-
-                else:
-
-                    current_user.password_hash = (
-                        generate_password_hash(
-                            new_password
-                        )
-                    )
-
-                    db.session.commit()
-
-                    success = (
-                        "Password changed successfully."
-                    )
-
+        if chosen in locations:
+            current_user.default_location = chosen
+            db.session.commit()
+            return redirect(url_for("account"))
         else:
-
-            error = "Invalid account form."
+            error = "Invalid location."
 
     return render_template(
         "account.html",
         error=error,
-        success=success,
-        password_strength=password_strength,
-        password_score=password_score
+        locations=locations,
+        current_user=current_user
     )
 
 
@@ -1020,7 +677,8 @@ def add_comment(post_id):
     comment = Comment(
         body=body,
         author_id=current_user.id,
-        post_id=post.id
+        post_id=post.id,
+        location=current_user.default_location
     )
 
     db.session.add(comment)
@@ -1108,4 +766,3 @@ if __name__ == "__main__":
         port=5000,
         debug=True)
 
-    
