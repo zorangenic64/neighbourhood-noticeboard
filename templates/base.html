@@ -240,14 +240,20 @@
 
         <div class="user-info">
             {% if current_user.is_authenticated %}
-                Logged in as <strong>{{ current_user.username }}</strong>
+                <span>{{ current_user.username }}</span>
+                <span>|</span>
+                <span>{{ current_user.default_location }}</span>
 
-                <a href="{{ url_for('create_post') }}">New Post</a>
-                <a href="{{ url_for('account') }}">My Account</a>
-                <a href="{{ url_for('logout') }}">Logout</a>
+                <a href="{{ url_for('account') }}" class="post-button">Account</a>
+                <a href="{{ url_for('create_post') }}" class="post-button">Post</a>
+
+                <form method="post" action="{{ url_for('logout') }}" class="inline-form">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="post-button">Logout</button>
+                </form>
             {% else %}
-                <a href="{{ url_for('login') }}">Login</a>
-                <a href="{{ url_for('register') }}">Register</a>
+                <a href="{{ url_for('login') }}" class="post-button">Login</a>
+                <a href="{{ url_for('register') }}" class="post-button">Register</a>
             {% endif %}
         </div>
     </div>

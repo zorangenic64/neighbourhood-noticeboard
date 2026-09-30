@@ -10,10 +10,15 @@
 
 <form method="post">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-    <textarea name="body" rows="4" required>{{ comment.body }}</textarea>
-    <br><br>
-    <button type="submit">Save</button>
-    <a href="{{ url_for('home') }}">Cancel</a>
+
+    <textarea name="body" rows="4" cols="60">{{ comment.body }}</textarea>
+
+    <div>
+        <button type="submit">Save</button>
+        <a href="{{ url_for('home') }}">
+            <button type="button">Cancel</button>
+        </a>
+    </div>
 </form>
 
 {% endblock %}

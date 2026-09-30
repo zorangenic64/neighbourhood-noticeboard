@@ -25,13 +25,15 @@
         placeholder="Search title or description"
     >
 
-    <select name="distance">
-        <option value="Any" {% if distance == 'Any' %}selected{% endif %}>Any</option>
-        <option value="5" {% if distance == '5' %}selected{% endif %}>5km</option>
-        <option value="10" {% if distance == '10' %}selected{% endif %}>10km</option>
-        <option value="20" {% if distance == '20' %}selected{% endif %}>20km</option>
-        <option value="50" {% if distance == '50' %}selected{% endif %}>50km</option>
-    </select>
+    {% if current_user.is_authenticated %}
+        <select name="distance">
+            <option value="Any" {% if distance == 'Any' %}selected{% endif %}>Any</option>
+            <option value="5" {% if distance == '5' %}selected{% endif %}>5km</option>
+            <option value="10" {% if distance == '10' %}selected{% endif %}>10km</option>
+            <option value="20" {% if distance == '20' %}selected{% endif %}>20km</option>
+            <option value="50" {% if distance == '50' %}selected{% endif %}>50km</option>
+        </select>
+    {% endif %}
 
     <button type="submit" class="post-button">Search</button>
 </form>
@@ -77,13 +79,15 @@
                 </form>
             {% endif %}
 
-            <button
-                type="button"
-                class="post-button"
-                onclick="toggleComments({{ post.id }})"
-            >
-                Toggle Comments
-            </button>
+            {% if current_user.is_authenticated %}
+                <button
+                    type="button"
+                    class="post-button"
+                    onclick="toggleComments({{ post.id }})"
+                >
+                    Toggle Comments
+                </button>
+            {% endif %}
 
             {% if current_user.is_authenticated and post.author_id == current_user.id %}
                 <a href="{{ url_for('edit_post', post_id=post.id) }}" class="post-button">
@@ -101,55 +105,57 @@
             {% endif %}
         </div>
 
-        <div
-            id="comments-{{ post.id }}"
-            class="comments-panel"
-            style="display: none;"
-        >
-            {% for comment in post.comments %}
-                <div class="comment">
-                    <div class="comment-header">
-                        <strong>{{ comment.author.username }}</strong>
-                        <span class="comment-meta-separator">|</span>
-                        <span>{{ comment.location }}</span>
-                        <span class="comment-meta-separator">|</span>
-                        <span class="comment-time">
-                            {{ comment.created_at.strftime('%d %b %Y %H:%M') }}
-                        </span>
-                    </div>
-
-                    <div class="comment-body">
-                        {{ comment.body }}
-                    </div>
-
-                    {% if current_user.is_authenticated and comment.author_id == current_user.id %}
-                        <div class="comment-actions">
-                            <a href="{{ url_for('edit_comment', comment_id=comment.id) }}" class="post-button">
-                                Edit
-                            </a>
-
-                            <form
-                                method="post"
-                                action="{{ url_for('delete_comment', comment_id=comment.id) }}"
-                                class="inline-form"
-                            >
-                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                <button type="submit" class="post-button">Delete</button>
-                            </form>
+        {% if current_user.is_authenticated %}
+            <div
+                id="comments-{{ post.id }}"
+                class="comments-panel"
+                style="display: none;"
+            >
+                {% for comment in post.comments %}
+                    <div class="comment">
+                        <div class="comment-header">
+                            <strong>{{ comment.author.username }}</strong>
+                            <span class="comment-meta-separator">|</span>
+                            <span>{{ comment.location }}</span>
+                            <span class="comment-meta-separator">|</span>
+                            <span class="comment-time">
+                                {{ comment.created_at.strftime('%d %b %Y %H:%M') }}
+                            </span>
                         </div>
-                    {% endif %}
-                </div>
-                <hr>
-            {% endfor %}
 
-            {% if current_user.is_authenticated and post.comments_enabled %}
-                <form method="post" action="{{ url_for('add_comment', post_id=post.id) }}" class="comment-form">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <input type="text" name="body" placeholder="Write a comment..." required>
-                    <button type="submit" class="post-button">Add Comment</button>
-                </form>
-            {% endif %}
-        </div>
+                        <div class="comment-body">
+                            {{ comment.body }}
+                        </div>
+
+                        {% if current_user.is_authenticated and comment.author_id == current_user.id %}
+                            <div class="comment-actions">
+                                <a href="{{ url_for('edit_comment', comment_id=comment.id) }}" class="post-button">
+                                    Edit
+                                </a>
+
+                                <form
+                                    method="post"
+                                    action="{{ url_for('delete_comment', comment_id=comment.id) }}"
+                                    class="inline-form"
+                                >
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="post-button">Delete</button>
+                                </form>
+                            </div>
+                        {% endif %}
+                    </div>
+                    <hr>
+                {% endfor %}
+
+                {% if current_user.is_authenticated and post.comments_enabled %}
+                    <form method="post" action="{{ url_for('add_comment', post_id=post.id) }}" class="comment-form">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="text" name="body" placeholder="Write a comment..." required>
+                        <button type="submit" class="post-button">Add Comment</button>
+                    </form>
+                {% endif %}
+            </div>
+        {% endif %}
     </div>
 {% endfor %}
 

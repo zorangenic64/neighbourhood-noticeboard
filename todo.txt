@@ -10,6 +10,9 @@ add proximit default for user
 add location text file
 add util for distance calc
 enahce search filter to use proximity + search string
+done up to here but forms are messed up and blocked words leaks on posts new and edit and 
+on comments new ignore and on edit says not allowed. 
+
 
 fix forms to register, post and edit post and comment and account 
 

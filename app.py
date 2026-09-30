@@ -61,6 +61,9 @@ def home():
     search_text = request.args.get("search", "").strip()
     distance = request.args.get("distance", "Any")
 
+    if not current_user.is_authenticated:
+        distance = "Any"
+
     query = Post.query
 
     if selected_category:
@@ -504,9 +507,9 @@ def create_post():
     error = None
 
     if request.method == "POST":
-        title = request.form["title"].strip()
-        body = request.form["body"].strip()
-        category = request.form["category"]
+        title = request.form.get("title", "").strip()
+        body = request.form.get("body", "").strip()
+        category = request.form.get("category", "")
         location = request.form.get("location", current_user.default_location)
         visibility = request.form.get("visibility", "public")
         comments_enabled = request.form.get("comments_enabled") == "1"
@@ -514,21 +517,35 @@ def create_post():
         if location not in locations:
             location = current_user.default_location
 
+        if contains_blocked_word(title) or contains_blocked_word(body):
+            return render_template(
+                "post_form.html",
+                post={
+                    "title": "",
+                    "body": "",
+                    "category": category,
+                    "location": current_user.default_location,
+                },
+                locations=locations,
+                current_user=current_user,
+                error="Post contains blocked words. Please remove the disallowed text and try again."
+            )
+
         if not title or not body:
             error = "Title and body are required."
-
-        post = Post(
-            title=title,
-            body=body,
-            category=category,
-            location=location,
-            visibility=visibility,
-            comments_enabled=comments_enabled,
-            author_id=current_user.id
-        )
-        db.session.add(post)
-        db.session.commit()
-        return redirect(url_for("home"))
+        else:
+            post = Post(
+                title=title,
+                body=body,
+                category=category,
+                location=location,
+                visibility=visibility,
+                comments_enabled=comments_enabled,
+                author_id=current_user.id
+            )
+            db.session.add(post)
+            db.session.commit()
+            return redirect(url_for("home"))
 
     return render_template(
         "post_form.html",
@@ -542,25 +559,49 @@ def create_post():
 @login_required
 def edit_post(post_id):
     post = Post.query.get_or_404(post_id)
-    error = None
     locations = load_location_choices()
+    error = None
 
     if post.author_id != current_user.id:
         abort(403)
 
     if request.method == "POST":
-        post.title = request.form["title"].strip()
-        post.body = request.form["body"].strip()
-        post.category = request.form["category"]
-        post.location = request.form.get("location", post.location)
-        post.visibility = request.form.get("visibility", post.visibility)
-        post.comments_enabled = request.form.get("comments_enabled") == "1"
+        title = request.form.get("title", "").strip()
+        body = request.form.get("body", "").strip()
+        category = request.form.get("category", "")
+        location = request.form.get("location", post.location)
+        visibility = request.form.get("visibility", post.visibility)
+        comments_enabled = request.form.get("comments_enabled") == "1"
 
-        if post.location not in locations:
-            post.location = current_user.default_location
+        if location not in locations:
+            location = current_user.default_location
 
-        db.session.commit()
-        return redirect(url_for("home"))
+        if contains_blocked_word(title) or contains_blocked_word(body):
+            return render_template(
+                "post_form.html",
+                post={
+                    "title": "",
+                    "body": "",
+                    "category": category,
+                    "location": current_user.default_location,
+                },
+                locations=locations,
+                current_user=current_user,
+                error="Post contains blocked words. Please remove the disallowed text and try again."
+            )
+
+        post.title = title
+        post.body = body
+        post.category = category
+        post.location = location
+        post.visibility = visibility
+        post.comments_enabled = comments_enabled
+
+        if not title or not body:
+            error = "Title and body are required."
+        else:
+            db.session.commit()
+            return redirect(url_for("home"))
 
     return render_template(
         "post_form.html",
@@ -620,10 +661,11 @@ def delete_post(post_id):
 
     return redirect(url_for("home"))
 
-@app.route("/logout")
+@app.route("/logout", methods=["POST"])
+@login_required
 def logout():
     logout_user()
-    return redirect(url_for("home"))
+    return redirect(url_for("login"))
 
 
 
