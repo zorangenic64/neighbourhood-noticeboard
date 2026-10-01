@@ -1,49 +1,89 @@
-<form method="post">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+{% extends "base.html" %}
 
-    <label>Title</label>
-    <input type="text" name="title" value="{{ post.title if post else '' }}" required>
+{% block page_styles %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/public.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/post-form.css') }}">
+{% endblock %}
 
-    <label>Category</label>
-    <select name="category">
-        <option value="Event" {% if post and post.category == 'Event' %}selected{% endif %}>Event</option>
-        <option value="Services Offered" {% if post and post.category == 'Services Offered' %}selected{% endif %}>Services Offered</option>
-        <option value="Lost and Found" {% if post and post.category == 'Lost and Found' %}selected{% endif %}>Lost and Found</option>
-        <option value="Free to Good Home" {% if post and post.category == 'Free to Good Home' %}selected{% endif %}>Free to Good Home</option>
-        <option value="Selling" {% if post and post.category == 'Selling' %}selected{% endif %}>Selling</option>
-        <option value="Announcements" {% if post and post.category == 'Announcements' %}selected{% endif %}>Announcements</option>
-    </select>
+{% block body_class %}public-page post-form-page{% endblock %}
 
-    <label>Visibility</label>
-    <select name="visibility">
-        <option value="public" {% if post and post.visibility == 'public' %}selected{% endif %}>Public</option>
-        <option value="members" {% if post and post.visibility == 'members' %}selected{% endif %}>Members only</option>
-    </select>
+{% block content %}
+<main class="post-form-shell">
+    <header class="form-page-heading">
+        <h2>{% if post %}Edit Post{% else %}Create New Post{% endif %}</h2>
+    </header>
 
-    <label>Location</label>
-    <select name="location" required>
-        {% for loc in locations %}
-            <option value="{{ loc }}"
-                {% if post and post.location == loc %}selected
-                {% elif not post and loc == current_user.default_location %}selected
-                {% endif %}>
-                {{ loc }}
-            </option>
-        {% endfor %}
-    </select>
+    {% if error %}
+        <p class="form-error" role="alert">{{ error }}</p>
+    {% endif %}
 
-    <label>
-        <input
-            type="checkbox"
-            name="comments_enabled"
-            value="1"
-            {% if post and post.comments_enabled %}checked{% endif %}
-        >
-        Enable comments
-    </label>
+    <form method="post" class="post-editor">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
-    <label>Body</label>
-    <textarea name="body" required>{{ post.body if post else '' }}</textarea>
+        <div class="form-field form-field--wide">
+            <label for="title">Title</label>
+            <input id="title" type="text" name="title" value="{{ post.title if post else '' }}" maxlength="50" data-character-limit data-character-count="post-title-count" aria-describedby="post-title-count" required>
+            <small id="post-title-count" class="character-count">50 characters remaining</small>
+        </div>
 
-    <button type="submit">Save</button>
-</form>
+        <div class="form-field">
+            <label for="category">Category</label>
+            <select id="category" name="category">
+                <option value="Event" {% if post and post.category == 'Event' %}selected{% endif %}>Event</option>
+                <option value="Services Offered" {% if post and post.category == 'Services Offered' %}selected{% endif %}>Services Offered</option>
+                <option value="Lost and Found" {% if post and post.category == 'Lost and Found' %}selected{% endif %}>Lost and Found</option>
+                <option value="Free to Good Home" {% if post and post.category == 'Free to Good Home' %}selected{% endif %}>Free to Good Home</option>
+                <option value="Selling" {% if post and post.category == 'Selling' %}selected{% endif %}>Selling</option>
+                <option value="Announcements" {% if post and post.category == 'Announcements' %}selected{% endif %}>Announcements</option>
+            </select>
+        </div>
+
+        <div class="form-field">
+            <label for="location">Location</label>
+            <select id="location" name="location" required>
+                {% for loc in locations %}
+                    <option value="{{ loc }}"
+                        {% if post and post.location == loc %}selected
+                        {% elif not post and loc == current_user.default_location %}selected
+                        {% endif %}>
+                        {{ loc }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="form-field">
+            <label for="visibility">Visibility</label>
+            <select id="visibility" name="visibility">
+                <option value="public" {% if post and post.visibility == 'public' %}selected{% endif %}>Public</option>
+                <option value="members" {% if post and post.visibility == 'members' %}selected{% endif %}>Members only</option>
+            </select>
+        </div>
+
+        <div class="form-field">
+            <span class="form-field-label">Comments</span>
+            <div class="form-checkbox">
+                <input
+                    id="comments_enabled"
+                    type="checkbox"
+                    name="comments_enabled"
+                    value="1"
+                    {% if post and post.comments_enabled %}checked{% endif %}
+                >
+                <label for="comments_enabled">Enable comments</label>
+            </div>
+        </div>
+
+        <div class="form-field form-field--wide">
+            <label for="body">Body</label>
+            <textarea id="body" name="body" maxlength="1000" data-character-limit data-character-count="post-body-count" aria-describedby="post-body-count" required>{{ post.body if post else '' }}</textarea>
+            <small id="post-body-count" class="character-count">1000 characters remaining</small>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="post-button primary-action">Save</button>
+            <a href="{{ url_for('home') }}" class="post-button cancel-action">Cancel</a>
+        </div>
+    </form>
+</main>
+{% endblock %}

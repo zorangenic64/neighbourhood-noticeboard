@@ -1,24 +1,36 @@
 {% extends "base.html" %}
 
+{% block page_styles %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/public.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/post-form.css') }}">
+{% endblock %}
+
+{% block body_class %}public-page post-form-page{% endblock %}
+
 {% block content %}
+<main class="post-form-shell">
+    <header class="form-page-heading">
+        <h2>Edit Comment</h2>
+    </header>
 
-<h2>Edit Comment</h2>
+    {% if error %}
+        <p class="form-error" role="alert">{{ error }}</p>
+    {% endif %}
 
-{% if error %}
-    <p>{{ error }}</p>
-{% endif %}
+    <form method="post" class="post-editor comment-editor">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
-<form method="post">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="form-field form-field--wide">
+            <label for="body">Comment</label>
+            <textarea id="body" name="body" rows="4" cols="60" maxlength="300" data-character-limit data-character-count="edit-comment-count" aria-describedby="edit-comment-count">{{ comment.body }}</textarea>
+            <small id="edit-comment-count" class="character-count">300 characters remaining</small>
+        </div>
 
-    <textarea name="body" rows="4" cols="60">{{ comment.body }}</textarea>
-
-    <div>
-        <button type="submit">Save</button>
-        <a href="{{ url_for('home') }}">
-            <button type="button">Cancel</button>
-        </a>
-    </div>
-</form>
+        <div class="form-actions">
+            <button type="submit" class="post-button primary-action">OK</button>
+            <a href="{{ url_for('home') }}" class="post-button cancel-action">Cancel</a>
+        </div>
+    </form>
+</main>
 
 {% endblock %}

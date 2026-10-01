@@ -14,17 +14,17 @@ def seed():
         alice = User(
             username="alice",
             password_hash=generate_password_hash("Password123!"),
-            security_question="Favourite city?",
+            security_question="Favourite dog?",
             security_answer_hash=generate_password_hash("Manchester"),
-            default_location="Manchester"
+            default_location="Mala"
         )
 
         bob = User(
             username="bob",
             password_hash=generate_password_hash("Password123!"),
-            security_question="Favourite city?",
+            security_question="Dog?",
             security_answer_hash=generate_password_hash("Leeds"),
-            default_location="Leeds"
+            default_location="Mala"
         )
 
         db.session.add_all([alice, bob])

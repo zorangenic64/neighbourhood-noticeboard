@@ -232,9 +232,10 @@
             }
         }
     </style>
+    {% block page_styles %}{% endblock %}
 </head>
 
-<body>
+<body class="{% block body_class %}{% endblock %}">
     <div class="topbar">
         <h1>Neighbourhood Notice Board</h1>
 
@@ -281,7 +282,29 @@
             applyCommentState(postId, !currentlyOpen);
         }
 
+        const commentScrollKey = "comment_form_scroll_y";
+
+        document.querySelectorAll(".comment-form").forEach(function (form) {
+            form.addEventListener("submit", function () {
+                sessionStorage.setItem(commentScrollKey, String(window.scrollY));
+            });
+        });
+
         document.addEventListener("DOMContentLoaded", function () {
+            document.querySelectorAll("[data-character-limit]").forEach(function (field) {
+                const maximum = Number(field.getAttribute("maxlength"));
+                const counter = document.getElementById(field.dataset.characterCount);
+                if (!counter || !Number.isFinite(maximum)) return;
+
+                const updateCounter = function () {
+                    counter.textContent = Math.max(0, maximum - field.value.length)
+                        + " characters remaining";
+                };
+
+                field.addEventListener("input", updateCounter);
+                updateCounter();
+            });
+
             document.querySelectorAll("[id^='comments-']").forEach(function (area) {
                 const postId = area.id.replace("comments-", "");
                 const saved = localStorage.getItem(getCommentStateKey(postId));
@@ -293,6 +316,14 @@
 
                 area.style.display = saved === "1" ? "block" : "none";
             });
+
+            const savedScrollY = sessionStorage.getItem(commentScrollKey);
+            if (savedScrollY !== null) {
+                sessionStorage.removeItem(commentScrollKey);
+                window.requestAnimationFrame(function () {
+                    window.scrollTo(0, Number(savedScrollY));
+                });
+            }
         });
     </script>
 </body>

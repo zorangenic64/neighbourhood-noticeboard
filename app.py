@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, abort, jsonify, session 
+from flask import Flask, render_template, request, redirect, url_for, abort, jsonify, session, flash, get_flashed_messages
 
 from flask_login import (
     LoginManager,
@@ -29,6 +29,22 @@ from utils.location_data import load_location_choices
 from utils.proximity import post_is_within_distance
 
 from sqlalchemy import or_
+
+USERNAME_MIN_LENGTH = 3
+USERNAME_MAX_LENGTH = 25
+PASSWORD_MIN_LENGTH = 8
+PASSWORD_MAX_LENGTH = 25
+RESET_PASSWORD_MIN_LENGTH = PASSWORD_MIN_LENGTH
+SECURITY_QUESTION_MIN_LENGTH = 1
+SECURITY_QUESTION_MAX_LENGTH = 25
+SECURITY_ANSWER_MIN_LENGTH = 1
+SECURITY_ANSWER_MAX_LENGTH = 25
+POST_TITLE_MIN_LENGTH = 6
+POST_TITLE_MAX_LENGTH = 50
+POST_BODY_MIN_LENGTH = 1
+POST_BODY_MAX_LENGTH = 1000
+COMMENT_MIN_LENGTH = 1
+COMMENT_MAX_LENGTH = 300
 
 app = Flask(__name__)
 
@@ -65,6 +81,9 @@ def home():
         distance = "Any"
 
     query = Post.query
+
+    if not current_user.is_authenticated:
+        query = query.filter(Post.visibility == "public")
 
     if selected_category:
         query = query.filter(Post.category == selected_category)
@@ -159,6 +178,12 @@ def check_username():
             "message": "Username cannot be empty."
         })
 
+    if not USERNAME_MIN_LENGTH <= len(username) <= USERNAME_MAX_LENGTH:
+        return jsonify({
+            "valid": False,
+            "message": "Username must be between 3 and 25 characters."
+        })
+
     if contains_blocked_word(username):
         return jsonify({
             "valid": False,
@@ -183,6 +208,8 @@ def check_username():
 def forgot_password():
 
     error = None
+    session.pop("recovery_user_id", None)
+    session.pop("recovery_verified", None)
 
     if request.method == "POST":
 
@@ -194,6 +221,10 @@ def forgot_password():
         if not username:
 
             error = "Please enter your username."
+
+        elif not USERNAME_MIN_LENGTH <= len(username) <= USERNAME_MAX_LENGTH:
+
+            error = "Username must be between 3 and 25 characters."
 
         else:
 
@@ -217,6 +248,12 @@ def forgot_password():
         "forgot_password.html",
         error=error
     )
+
+@app.route("/forgot-password/cancel")
+def cancel_password_recovery():
+    session.pop("recovery_user_id", None)
+    session.pop("recovery_verified", None)
+    return redirect(url_for("home"))
 
 @app.route(
     "/forgot-password/question",
@@ -259,6 +296,10 @@ def forgot_password_question():
             error = (
                 "Please enter your security answer."
             )
+
+        elif len(security_answer) > SECURITY_ANSWER_MAX_LENGTH:
+
+            error = "Security answer must be no more than 25 characters."
 
         elif not check_password_hash(
             user.security_answer_hash,
@@ -345,6 +386,10 @@ def reset_password():
 
             error = "Password cannot be empty."
 
+        elif len(new_password) > PASSWORD_MAX_LENGTH:
+
+            error = "Password must be no more than 25 characters long."
+
         elif new_password != confirm_password:
 
             error = "Passwords do not match."
@@ -352,7 +397,7 @@ def reset_password():
         else:
 
             has_minimum_length = (
-                len(new_password) >= 8
+                len(new_password) >= RESET_PASSWORD_MIN_LENGTH
             )
 
             has_uppercase = any(
@@ -394,7 +439,7 @@ def reset_password():
 
                 error = (
                     "Password must be at least "
-                    "8 characters long."
+                    f"{RESET_PASSWORD_MIN_LENGTH} characters long."
                 )
 
             elif not has_uppercase:
@@ -476,7 +521,15 @@ def register():
         if default_location not in locations:
             default_location = "Unknown"
 
-        if password != confirm_password:
+        if not USERNAME_MIN_LENGTH <= len(username) <= USERNAME_MAX_LENGTH:
+            error = "Username must be between 3 and 25 characters."
+        elif not PASSWORD_MIN_LENGTH <= len(password) <= PASSWORD_MAX_LENGTH:
+            error = "Password must be between 8 and 25 characters."
+        elif not SECURITY_QUESTION_MIN_LENGTH <= len(security_question) <= SECURITY_QUESTION_MAX_LENGTH:
+            error = "Security question must be between 1 and 25 characters."
+        elif not SECURITY_ANSWER_MIN_LENGTH <= len(security_answer) <= SECURITY_ANSWER_MAX_LENGTH:
+            error = "Security answer must be between 1 and 25 characters."
+        elif password != confirm_password:
             error = "Passwords do not match."
         else:
             existing = User.query.filter_by(username=username).first()
@@ -533,6 +586,10 @@ def create_post():
 
         if not title or not body:
             error = "Title and body are required."
+        elif not POST_TITLE_MIN_LENGTH <= len(title) <= POST_TITLE_MAX_LENGTH:
+            error = "Post title must be between 6 and 50 characters."
+        elif not POST_BODY_MIN_LENGTH <= len(body) <= POST_BODY_MAX_LENGTH:
+            error = "Post description must be between 1 and 1000 characters."
         else:
             post = Post(
                 title=title,
@@ -599,6 +656,10 @@ def edit_post(post_id):
 
         if not title or not body:
             error = "Title and body are required."
+        elif not POST_TITLE_MIN_LENGTH <= len(title) <= POST_TITLE_MAX_LENGTH:
+            error = "Post title must be between 6 and 50 characters."
+        elif not POST_BODY_MIN_LENGTH <= len(body) <= POST_BODY_MAX_LENGTH:
+            error = "Post description must be between 1 and 1000 characters."
         else:
             db.session.commit()
             return redirect(url_for("home"))
@@ -673,21 +734,66 @@ def logout():
 @login_required
 def account():
     error = None
+    success = None
+    success_type = None
     locations = load_location_choices()
 
     if request.method == "POST":
-        chosen = request.form.get("default_location", current_user.default_location)
+        form_type = request.form.get("form_type")
 
-        if chosen in locations:
-            current_user.default_location = chosen
-            db.session.commit()
-            return redirect(url_for("account"))
+        if form_type == "password":
+            current_password = request.form.get("current_password", "")
+            new_password = request.form.get("new_password", "")
+            confirm_password = request.form.get("confirm_password", "")
+
+            if not check_password_hash(current_user.password_hash, current_password):
+                error = "Current password is incorrect."
+            elif not PASSWORD_MIN_LENGTH <= len(new_password) <= PASSWORD_MAX_LENGTH:
+                error = "New password must be between 8 and 25 characters."
+            elif new_password != confirm_password:
+                error = "Passwords do not match."
+            else:
+                current_user.password_hash = generate_password_hash(new_password)
+                db.session.commit()
+                success = "Password changed successfully."
+                success_type = "password"
+
+        elif form_type == "security":
+            security_question = request.form.get("security_question", "")
+            security_answer = request.form.get("security_answer", "")
+
+            if not SECURITY_QUESTION_MIN_LENGTH <= len(security_question) <= SECURITY_QUESTION_MAX_LENGTH:
+                error = "Security question must be between 1 and 25 characters."
+            elif not SECURITY_ANSWER_MIN_LENGTH <= len(security_answer) <= SECURITY_ANSWER_MAX_LENGTH:
+                error = "Security answer must be between 1 and 25 characters."
+            else:
+                current_user.security_question = security_question
+                current_user.security_answer_hash = generate_password_hash(security_answer)
+                db.session.commit()
+                success = "Security details saved successfully."
+                success_type = "security"
+
         else:
-            error = "Invalid location."
+            chosen = request.form.get("default_location", current_user.default_location)
+
+            if chosen in locations:
+                current_user.default_location = chosen
+                db.session.commit()
+                flash("Default location saved successfully.", "account_location_success")
+                return redirect(url_for("account"))
+            else:
+                error = "Invalid location."
+
+    for category, message in get_flashed_messages(with_categories=True):
+        if category == "account_location_success":
+            success = message
+            success_type = "location"
 
     return render_template(
         "account.html",
         error=error,
+        success=success,
+        success_type=success_type,
         locations=locations,
         current_user=current_user
     )
@@ -712,6 +818,9 @@ def add_comment(post_id):
 
     if not body:
         return redirect(url_for("home"))
+
+    if not COMMENT_MIN_LENGTH <= len(body) <= COMMENT_MAX_LENGTH:
+        return redirect(request.referrer or url_for("home"))
 
     if contains_blocked_word(body):
         return redirect(url_for("home"))
@@ -779,6 +888,9 @@ def edit_comment(comment_id):
 
         if not body:
             error = "Comment cannot be empty."
+
+        elif not COMMENT_MIN_LENGTH <= len(body) <= COMMENT_MAX_LENGTH:
+            error = "Comment must be between 1 and 300 characters."
 
         elif contains_blocked_word(body):
             error = (

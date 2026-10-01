@@ -1,5 +1,11 @@
 {% extends "base.html" %}
 
+{% block page_styles %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/public.css') }}">
+{% endblock %}
+
+{% block body_class %}public-page noticeboard-page{% endblock %}
+
 {% block content %}
 
 <div class="menu">
@@ -18,6 +24,12 @@
 </div>
 
 <form method="get" class="search-bar">
+    {% if selected_category %}
+        <input type="hidden" name="category" value="{{ selected_category }}">
+    {% endif %}
+    {% if picked_filter %}
+        <input type="hidden" name="picked" value="1">
+    {% endif %}
     <input
         type="text"
         name="search"
@@ -42,18 +54,18 @@
 
 {% for post in posts %}
     <div class="post">
-        <h2>{{ post.title }}</h2>
+        <div class="post-heading">
+            <h2>{{ post.title }}</h2>
+            <span class="category-badge">{{ post.category }}</span>
+        </div>
 
         <div class="post-meta">
-            <span>{{ post.category }}</span>
-            <span class="meta-separator">|</span>
-            <span>{{ post.author.username }}</span>
-            <span class="meta-separator">|</span>
-            <span>{{ post.location }}</span>
-            <span class="meta-separator">|</span>
-            <span>{{ post.created_at.strftime('%d %b %Y %H:%M') }}</span>
-            <span class="meta-separator">|</span>
-            <span>Comments #{{ post.comments|length }}</span>
+            <span class="post-meta-item">{{ post.author.username }}</span>
+            <span class="post-meta-item">{{ post.created_at.strftime('%d %b %Y %H:%M') }}</span>
+            <span class="post-meta-item">{{ post.location }}</span>
+            <span class="post-meta-item comment-count" aria-label="{{ post.comments|length }} comments">
+                <span aria-hidden="true">&#128172;</span> {{ post.comments|length }}
+            </span>
         </div>
 
         <p>{{ post.body }}</p>
@@ -150,7 +162,10 @@
                 {% if current_user.is_authenticated and post.comments_enabled %}
                     <form method="post" action="{{ url_for('add_comment', post_id=post.id) }}" class="comment-form">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <input type="text" name="body" placeholder="Write a comment..." required>
+                        <div class="comment-input-group">
+                            <input type="text" name="body" placeholder="Write a comment..." maxlength="300" data-character-limit data-character-count="new-comment-count-{{ post.id }}" aria-describedby="new-comment-count-{{ post.id }}" required>
+                            <small id="new-comment-count-{{ post.id }}" class="character-count">300 characters remaining</small>
+                        </div>
                         <button type="submit" class="post-button">Add Comment</button>
                     </form>
                 {% endif %}

@@ -1,258 +1,162 @@
 {% extends "base.html" %}
 
+{% block page_styles %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/public.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/post-form.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/account.css') }}">
+{% endblock %}
+
+{% block body_class %}public-page post-form-page account-page{% endblock %}
+
 {% block content %}
+<main class="account-shell">
+    <header class="account-heading">
+        <h2>My Account</h2>
+    </header>
 
-<h2>My Account</h2>
-
-<style>
-
-    .password-check {
-        margin: 4px 0;
-    }
-
-    .check-fail {
-        color: red;
-    }
-
-    .check-pass {
-        color: green;
-    }
-
-    #strength-text {
-        font-weight: bold;
-    }
-
-    .strength-very-weak {
-        color: red;
-    }
-
-    .strength-weak {
-        color: pink;
-    }
-
-    .strength-fair {
-        color: orange;
-    }
-
-    .strength-strong {
-        color: lightgreen;
-    }
-
-    .strength-very-strong {
-        color: green;
-    }
-
-</style>
-
-
-
-<p>
-    <strong>Username:</strong>
-    {{ current_user.username }}
-</p>
-
-<p>
-    <strong>Account created:</strong>
-    {{ current_user.created_at.strftime('%d %b %Y') }}
-</p>
-
-<p>
-    <strong>Last login:</strong>
-
-    {% if current_user.last_login %}
-        {{ current_user.last_login.strftime('%d %b %Y at %H:%M') }}
-    {% else %}
-        Never
-    {% endif %}
-</p>
-
-<hr>
-
-<h3>Change Password</h3>
+    <section class="account-summary" aria-label="Account information">
+        <dl class="account-summary-item">
+            <dt>Username</dt>
+            <dd>{{ current_user.username }}</dd>
+        </dl>
+        <dl class="account-summary-item">
+            <dt>Account created</dt>
+            <dd>{{ current_user.created_at.strftime('%d %b %Y') }}</dd>
+        </dl>
+        <dl class="account-summary-item">
+            <dt>Last login</dt>
+            <dd>
+                {% if current_user.last_login %}
+                    {{ current_user.last_login.strftime('%d %b %Y at %H:%M') }}
+                {% else %}
+                    Never
+                {% endif %}
+            </dd>
+        </dl>
+    </section>
 
 {% if error %}
-    <p style="color: red;">
+    <p class="account-message" role="alert">
         {{ error }}
     </p>
 {% endif %}
 
-{% if success %}
-    <p style="color: green;">
-        {{ success }}
-    </p>
-{% endif %}
-
-<form method="post">
-
-        <input
-        type="hidden"
-        name="csrf_token"
-        value="{{ csrf_token() }}"
-    >
-
-
-    <input type="hidden" name="form_type" value="password" >
-
-    <p>
-        <label for="current_password">
-            Current password
-        </label><br>
-
-        <input
-            type="password"
-            id="current_password"
-            name="current_password"
-            required
-        >
-    </p>
-
-    <p>
-        <label for="new_password">
-            New password
-        </label><br>
-
-        <input
-            type="password"
-            id="new_password"
-            name="new_password"
-            required
-        >
-    </p>
-
-    <div id="password-strength">
-
-        <p>
-            <strong>Password strength:</strong>
-            <span id="strength-text">Not entered</span>
-        </p>
-
-        <ul>
-
-        <li id="length-check" class="password-check check-fail">
-            ✗ At least 8 characters
-        </li>
-
-        <li id="uppercase-check" class="password-check check-fail">
-            ✗ At least one capital letter
-        </li>
-
-        <li id="number-check" class="password-check check-fail">
-            ✗ At least one number
-        </li>
-
-        <li id="symbol-check" class="password-check check-fail">
-            ✗ At least one symbol
-        </li>
-
-
-        </ul>
-
-    </div>  
-
-    {% if password_strength %}
-
-        <p>
-            <strong>Password strength:</strong>
-            {{ password_strength }}
-        </p>
-
+<section class="account-section">
+    {% if success and success_type == 'password' %}
+        <p class="account-message account-message--success" role="status">{{ success }}</p>
     {% endif %}
+    <header class="account-section-heading">
+        <h3>Change Password</h3>
+    </header>
 
-    <p>
-        <label for="confirm_password">
-            Confirm new password
-        </label><br>
+    <form method="post" class="post-editor account-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="form_type" value="password">
 
-        <input
-            type="password"
-            id="confirm_password"
-            name="confirm_password"
-            required
-        >
-    </p>
+        <div class="form-field">
+            <label for="current_password">Current password</label>
+            <input type="password" id="current_password" name="current_password" required>
+        </div>
 
-    <button
-        type="submit"
-        class="post-button"
-    >
-        Change Password
-    </button>
+        <div class="form-field">
+            <label for="new_password">New password</label>
+            <input type="password" id="new_password" name="new_password" minlength="8" maxlength="25" required>
+        </div>
 
-    <a
-        href="{{ url_for('home') }}"
-        class="post-button"
-    >
-        Cancel
-    </a>
+        <div id="password-strength" class="password-guidance">
+            <p>
+                <strong>Password strength:</strong>
+                <span id="strength-text">Not entered</span>
+            </p>
+            <ul>
+                <li id="length-check" class="password-check check-fail">✗ At least 8 characters</li>
+                <li id="uppercase-check" class="password-check check-fail">✗ At least one capital letter</li>
+                <li id="number-check" class="password-check check-fail">✗ At least one number</li>
+                <li id="symbol-check" class="password-check check-fail">✗ At least one symbol</li>
+            </ul>
+        </div>
 
-</form>
+        {% if password_strength %}
+            <p class="password-guidance form-field--wide">
+                <strong>Password strength:</strong>
+                {{ password_strength }}
+            </p>
+        {% endif %}
 
+        <div class="form-field">
+            <label for="confirm_password">Confirm new password</label>
+            <input type="password" id="confirm_password" name="confirm_password" minlength="8" maxlength="25" required>
+        </div>
 
-<h3>Security Question</h3>
+        <div class="form-actions">
+            <button type="submit" class="post-button primary-action">Change Password</button>
+            <a href="{{ url_for('home') }}" class="post-button cancel-action">Cancel</a>
+        </div>
+    </form>
+</section>
 
-<p>
-    This question will be used if you forget your password.
-</p>
+<section class="account-section">
+    {% if success and success_type == 'security' %}
+        <p class="account-message account-message--success" role="status">{{ success }}</p>
+    {% endif %}
+    <header class="account-section-heading">
+        <h3>Security Question</h3>
+        <p class="section-note">This question will be used if you forget your password.</p>
+    </header>
 
-<form method="post" autocomplete="off">
+    <form method="post" autocomplete="off" class="post-editor account-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="form_type" value="security">
 
-    <input
-        type="hidden"
-        name="csrf_token"
-        value="{{ csrf_token() }}"
-    >
+        <div class="form-field">
+            <label for="security_question">Security question</label>
+            <input
+                type="text"
+                id="security_question"
+                name="security_question"
+                value="{{ current_user.security_question }}"
+                minlength="1"
+                maxlength="25"
+                required
+            >
+        </div>
 
-    <input
-        type="hidden"
-        name="form_type"
-        value="security"
-    >
+        <div class="form-field">
+            <label for="security_answer">Security answer</label>
+            <div class="password-input-wrap">
+                <input
+                    type="password"
+                    id="security_answer"
+                    name="security_answer"
+                    minlength="1"
+                    maxlength="25"
+                    placeholder="Enter your answer"
+                    autocomplete="new-password"
+                    required
+                >
+                <button
+                    type="button"
+                    id="toggle_security_answer"
+                    class="password-visibility-toggle"
+                    aria-label="Show security answer"
+                    aria-controls="security_answer"
+                    title="Show security answer"
+                >
+                    <span aria-hidden="true">&#128065;</span>
+                </button>
+            </div>
+        </div>
 
-    <p>
-        <label for="security_question">
-            Security question
-        </label><br>
+        <p class="security-answer-note">
+            <small>Your answer is never displayed and is stored securely.</small>
+        </p>
 
-        <input
-            type="text"
-            id="security_question"
-            name="security_question"
-            value="{{ current_user.security_question }}"
-            maxlength="255"
-            required
-        >
-    </p>
-
-    <p>
-        <label for="security_answer">
-            Security answer
-        </label><br>
-
-        <input
-            type="password"
-            id="security_answer"
-            name="security_answer"
-            maxlength="255"
-            placeholder="Enter your answer"
-            autocomplete="new-password"
-            required
-        >
-    </p>
-
-    <p>
-        <small>
-            Your answer is never displayed and is stored securely.
-        </small>
-    </p>
-
-    <button
-        type="submit"
-        class="post-button"
-    >
-        Save Security Details
-    </button>
-
-</form>
+        <div class="form-actions">
+            <button type="submit" class="post-button primary-action">Save Security Details</button>
+            <a href="{{ url_for('home') }}" class="post-button cancel-action">Cancel</a>
+        </div>
+    </form>
+</section>
 
 
 
@@ -374,25 +278,51 @@
 
     });
 
+    const securityAnswerInput = document.getElementById("security_answer");
+    const securityAnswerToggle = document.getElementById("toggle_security_answer");
+
+    securityAnswerToggle.addEventListener("click", function () {
+        const revealAnswer = securityAnswerInput.type === "password";
+        securityAnswerInput.type = revealAnswer ? "text" : "password";
+
+        const label = revealAnswer ? "Hide security answer" : "Show security answer";
+        securityAnswerToggle.setAttribute("aria-label", label);
+        securityAnswerToggle.setAttribute("title", label);
+        securityAnswerToggle.setAttribute("aria-pressed", String(revealAnswer));
+    });
+
 </script>
 
 
 
-<h3>Default Location</h3>
+<section class="account-section">
+    {% if success and success_type == 'location' %}
+        <p class="account-message account-message--success" role="status">{{ success }}</p>
+    {% endif %}
+    <header class="account-section-heading">
+        <h3>Default Location</h3>
+    </header>
 
-<form method="post">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <form method="post" class="post-editor account-form account-location-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
-    <label>Default Location</label>
-    <select name="default_location">
-        {% for loc in locations %}
-            <option value="{{ loc }}" {% if loc == current_user.default_location %}selected{% endif %}>
-                {{ loc }}
-            </option>
-        {% endfor %}
-    </select>
+        <div class="form-field form-field--wide">
+            <label for="default_location">Default Location</label>
+            <select id="default_location" name="default_location">
+                {% for loc in locations %}
+                    <option value="{{ loc }}" {% if loc == current_user.default_location %}selected{% endif %}>
+                        {{ loc }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
 
-    <button type="submit">Save</button>
-</form>
+        <div class="form-actions">
+            <button type="submit" class="post-button primary-action">Save</button>
+            <a href="{{ url_for('home') }}" class="post-button cancel-action">Cancel</a>
+        </div>
+    </form>
+</section>
+</main>
 
 {% endblock %}
