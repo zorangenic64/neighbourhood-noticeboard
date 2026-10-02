@@ -17,7 +17,9 @@ def seed():
             password_hash=generate_password_hash("Password123!"),
             security_question="Favourite dog?",
             security_answer_hash=generate_password_hash("mala"),
-            default_location="Manchester"
+            default_location="Manchester",
+            is_admin=True,
+            status="active"
         )
 
         bob = User(
@@ -25,7 +27,9 @@ def seed():
             password_hash=generate_password_hash("Password123!"),
             security_question="Dog?",
             security_answer_hash=generate_password_hash("mala"),
-            default_location="Leeds"
+            default_location="Leeds",
+            is_admin=False,
+            status="active"
         )
 
         db.session.add_all([alice, bob])

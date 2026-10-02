@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Delete User</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 700px;
+            margin: 0 auto;
+            padding: 24px;
+            color: #111;
+        }
+
+        .card {
+            border: 1px solid #d0d7de;
+            border-radius: 8px;
+            padding: 20px;
+            background: #fff;
+        }
+
+        .danger {
+            color: #b42318;
+            font-weight: bold;
+        }
+
+        .actions {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .button {
+            display: inline-block;
+            padding: 8px 14px;
+            border: 1px solid #ccc;
+            background: #e6e6e6;
+            border-radius: 6px;
+            color: #111;
+            text-decoration: none;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .button.danger {
+            background: #f8d7da;
+            border-color: #f5c2c7;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>Delete User</h1>
+
+        <p>Are you sure you want to delete <strong>{{ user.username }}</strong>?</p>
+        <p>This will also remove:</p>
+        <ul>
+            <li>all posts written by this user</li>
+            <li>all comments on those posts</li>
+            <li>all comments made by this user</li>
+            <li>all saved picks for this user</li>
+        </ul>
+
+        <form method="post">
+            <div class="actions">
+                <button class="button danger" type="submit">Confirm Delete</button>
+                <a class="button" href="/users">Cancel</a>
+            </div>
+        </form>
+    </div>
+</body>
+</html>

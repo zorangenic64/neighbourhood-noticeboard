@@ -36,6 +36,67 @@ class User(UserMixin, db.Model):
         nullable=True
     )
 
+    last_successful_login_datetime = db.Column(
+        db.DateTime,
+        nullable=True
+    )
+
+    login_fail_count = db.Column(
+        db.Integer,
+        nullable=False,
+        default=0
+    )
+
+    login_last_attempt_status = db.Column(
+        db.String(20),
+        nullable=False,
+        default="SUCCESS"
+    )
+
+    login_last_failed_datetime = db.Column(
+        db.DateTime,
+        nullable=True
+    )
+
+    login_retry_after_datetime = db.Column(
+        db.DateTime,
+        nullable=True
+    )
+
+    security_fail_count = db.Column(
+        db.Integer,
+        nullable=False,
+        default=0
+    )
+
+    security_last_attempt_status = db.Column(
+        db.String(20),
+        nullable=False,
+        default="SUCCESS"
+    )
+
+    security_last_failed_datetime = db.Column(
+        db.DateTime,
+        nullable=True
+    )
+
+    security_retry_after_datetime = db.Column(
+        db.DateTime,
+        nullable=True
+    )
+
+    status = db.Column(
+        db.String(20),
+        nullable=False,
+        default="active"
+    )
+
+    is_admin = db.Column(
+        db.Boolean,
+        nullable=False,
+        default=False
+    )
+
     security_question = db.Column(
         db.String(255),
         nullable=False

@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }}</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 700px; margin: 0 auto; padding: 24px; color: #111; }
+        .card { border: 1px solid #d0d7de; border-radius: 8px; padding: 20px; background: #fff; }
+        .actions { margin-top: 20px; display: flex; gap: 10px; flex-wrap: wrap; }
+        .button { display: inline-block; padding: 8px 14px; border: 1px solid #ccc; background: #e6e6e6; border-radius: 6px; color: #111; text-decoration: none; cursor: pointer; font-size: 14px; }
+        .button.danger { background: #f8d7da; border-color: #f5c2c7; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>{{ title }}</h1>
+        <p>Are you sure you want to delete <strong>{{ record_name }}</strong>?</p>
+        <p>{{ message }}</p>
+        <form method="post">
+            <div class="actions">
+                <button class="button danger" type="submit">Confirm Delete</button>
+                <a class="button" href="{{ cancel_url }}">Cancel</a>
+            </div>
+        </form>
+    </div>
+</body>
+</html>

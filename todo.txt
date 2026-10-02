@@ -35,7 +35,7 @@ all fixed and looks nice - stopped here evening of 20 sep
 - reset filtering and toggled comments on login
 
 
-
+*************************
 # Authentication and Password Recovery Throttling Specification
 ## Overview
 The system shall implement progressive throttling for:
@@ -125,6 +125,24 @@ Set:
 Return:
 ```text: Invalid password. You may retry after: <login_retry_after_datetime>
 ```
+
+# Persistence Requirements
+All counters, timestamps, status flags, and retry dates shall be stored in the database.
+The implementation shall not rely on application memory for throttling calculations.
+This ensures throttling remains effective after:
+- Application restart
+- Web server restart
+- System reboot
+- Application deployment
+---
+# Time Reference
+All date and time values shall be stored using UTC timestamps.
+User-facing displays may convert timestamps into local time zones where appropriate.
+Do not chnage any other funcitonality. 
+Maintain look and feel as it is now. 
+
+*************************
+
 ---
 # Password Recovery Processing Logic
 ## Overview

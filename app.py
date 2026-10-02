@@ -74,16 +74,36 @@ def ensure_post_expiry_schema():
             return
 
         inspector = inspect(db.engine)
-        if not inspector.has_table("post"):
-            return
-
-        columns = {column["name"] for column in inspector.get_columns("post")}
-        if "expires_in_days" not in columns:
+        if inspector.has_table("user"):
+            user_columns = {column["name"] for column in inspector.get_columns("user")}
+            user_schema_updates = [
+                ("last_successful_login_datetime", "DATETIME"),
+                ("login_fail_count", "INTEGER NOT NULL DEFAULT 0"),
+                ("login_last_attempt_status", "VARCHAR(20) NOT NULL DEFAULT 'SUCCESS'"),
+                ("login_last_failed_datetime", "DATETIME"),
+                ("login_retry_after_datetime", "DATETIME"),
+                ("security_fail_count", "INTEGER NOT NULL DEFAULT 0"),
+                ("security_last_attempt_status", "VARCHAR(20) NOT NULL DEFAULT 'SUCCESS'"),
+                ("security_last_failed_datetime", "DATETIME"),
+                ("security_retry_after_datetime", "DATETIME"),
+                ("status", "VARCHAR(20) NOT NULL DEFAULT 'active'"),
+                ("is_admin", "BOOLEAN NOT NULL DEFAULT 0")
+            ]
             with db.engine.begin() as connection:
-                connection.execute(text(
-                    "ALTER TABLE post ADD COLUMN expires_in_days "
-                    "INTEGER NOT NULL DEFAULT 7"
-                ))
+                for column_name, column_sql in user_schema_updates:
+                    if column_name not in user_columns:
+                        connection.execute(text(
+                            f"ALTER TABLE user ADD COLUMN {column_name} {column_sql}"
+                        ))
+
+        if inspector.has_table("post"):
+            columns = {column["name"] for column in inspector.get_columns("post")}
+            if "expires_in_days" not in columns:
+                with db.engine.begin() as connection:
+                    connection.execute(text(
+                        "ALTER TABLE post ADD COLUMN expires_in_days "
+                        "INTEGER NOT NULL DEFAULT 7"
+                    ))
 
         _post_expiry_schema_checked = True
 

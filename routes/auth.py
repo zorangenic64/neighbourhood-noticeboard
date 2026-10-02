@@ -42,6 +42,33 @@ from utils.validation import (
 
 import config
 
+THROTTLE_DELAY_BY_FAILURES = {
+    1: timedelta(seconds=5),
+    2: timedelta(seconds=30),
+    3: timedelta(minutes=5),
+    4: timedelta(hours=1),
+    5: timedelta(days=1),
+}
+
+
+def get_retry_delay(fail_count):
+    if fail_count >= 5:
+        return timedelta(days=1)
+    if fail_count == 4:
+        return timedelta(hours=1)
+    if fail_count == 3:
+        return timedelta(minutes=5)
+    if fail_count == 2:
+        return timedelta(seconds=30)
+    return timedelta(seconds=5)
+
+
+def format_retry_datetime(value):
+    if value is None:
+        return "now"
+    return value.strftime("%Y-%m-%d %H:%M:%S UTC")
+
+
 @app.route("/login", methods=["GET", "POST"])
 def login():
 
@@ -56,19 +83,44 @@ def login():
             username=username
         ).first()
 
-        if user and check_password_hash(
-            user.password_hash,
-            password
-        ):
-            
-            user.last_login = datetime.utcnow()
-            db.session.commit()
-        
-            login_user(user)
-            session["clear_comment_state"] = True
-            return redirect(url_for("home"))
+        if not user:
+            error = "Invalid username or password"
+        else:
+            now = datetime.utcnow()
+            if user.status == "suspended":
+                error = "Your account is suspended. Please contact support."
+            elif user.login_retry_after_datetime and now < user.login_retry_after_datetime:
+                error = (
+                    "Login temporarily blocked. You may retry after: "
+                    f"{format_retry_datetime(user.login_retry_after_datetime)}"
+                )
+            elif check_password_hash(
+                user.password_hash,
+                password
+            ):
+                user.login_fail_count = 0
+                user.login_last_attempt_status = "SUCCESS"
+                user.login_retry_after_datetime = None
+                user.last_successful_login_datetime = now
+                user.last_login = now
+                user.status = "active"
+                db.session.commit()
 
-        error = "Invalid username or password"
+                login_user(user)
+                session["clear_comment_state"] = True
+                return redirect(url_for("home"))
+            else:
+                user.login_fail_count = (user.login_fail_count or 0) + 1
+                user.login_last_attempt_status = "FAILURE"
+                user.login_last_failed_datetime = now
+                user.login_retry_after_datetime = now + get_retry_delay(user.login_fail_count)
+                if user.login_fail_count >= 5:
+                    user.status = "suspended"
+                db.session.commit()
+                error = (
+                    "Invalid password. You may retry after: "
+                    f"{format_retry_datetime(user.login_retry_after_datetime)}"
+                )
 
     return render_template(
         "login.html",
@@ -208,19 +260,38 @@ def forgot_password_question():
             )
 
         else:
-            security_answer_error = validate_security_answer(security_answer)
-            if security_answer_error:
-                error = security_answer_error
-            elif not check_password_hash(
-                user.security_answer_hash,
-                security_answer.lower()
-            ):
-                error = "Incorrect security answer."
-            else:
-                session["recovery_verified"] = True
-                return redirect(
-                    url_for("reset_password")
+            now = datetime.utcnow()
+            if user.security_retry_after_datetime and now < user.security_retry_after_datetime:
+                error = (
+                    "Security question temporarily blocked. You may retry after: "
+                    f"{format_retry_datetime(user.security_retry_after_datetime)}"
                 )
+            else:
+                security_answer_error = validate_security_answer(security_answer)
+                if security_answer_error:
+                    error = security_answer_error
+                elif not check_password_hash(
+                    user.security_answer_hash,
+                    security_answer.lower()
+                ):
+                    user.security_fail_count = (user.security_fail_count or 0) + 1
+                    user.security_last_attempt_status = "FAILURE"
+                    user.security_last_failed_datetime = now
+                    user.security_retry_after_datetime = now + get_retry_delay(user.security_fail_count)
+                    db.session.commit()
+                    error = (
+                        "Incorrect answer. You may retry after: "
+                        f"{format_retry_datetime(user.security_retry_after_datetime)}"
+                    )
+                else:
+                    user.security_fail_count = 0
+                    user.security_last_attempt_status = "SUCCESS"
+                    user.security_retry_after_datetime = None
+                    db.session.commit()
+                    session["recovery_verified"] = True
+                    return redirect(
+                        url_for("reset_password")
+                    )
 
     return render_template(
         "forgot_password_question.html",

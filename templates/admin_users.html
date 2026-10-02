@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Users</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 24px;
+            color: #111;
+        }
+
+        h1 {
+            margin-bottom: 20px;
+        }
+
+        .flash {
+            margin-bottom: 20px;
+            padding: 10px 14px;
+            border: 1px solid #d0d7de;
+            background: #f6f8fa;
+            border-radius: 6px;
+        }
+
+        .toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .nav {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+
+        th, td {
+            border: 1px solid #d0d7de;
+            padding: 8px 10px;
+            text-align: left;
+            vertical-align: top;
+            background: #fff;
+        }
+
+        th {
+            background: #f3f4f6;
+        }
+
+        .actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .button {
+            display: inline-block;
+            padding: 6px 12px;
+            border: 1px solid #ccc;
+            background: #e6e6e6;
+            border-radius: 6px;
+            color: #111;
+            text-decoration: none;
+            cursor: pointer;
+            font-size: 13px;
+        }
+
+        .button.danger {
+            background: #f8d7da;
+            border-color: #f5c2c7;
+        }
+
+        .button.primary {
+            background: #dfefff;
+            border-color: #b8d4ff;
+        }
+
+        .pill {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 999px;
+            font-size: 12px;
+            background: #e9ecef;
+        }
+
+        .pill.active {
+            background: #d1f2e3;
+        }
+
+        .pill.suspended {
+            background: #fde2e2;
+        }
+
+        .pill.admin {
+            background: #e0dcff;
+        }
+
+        @media (max-width: 900px) {
+            body {
+                padding: 12px;
+            }
+            table {
+                display: block;
+                overflow-x: auto;
+                white-space: nowrap;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Administration - Users</h1>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="flash">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div class="toolbar">
+        <a class="button" href="{{ request.full_path.rstrip('?') }}">Refresh</a>
+        <a class="button" href="{{ url_for('users') }}">Reset</a>
+    </div>
+    <nav class="nav" aria-label="Admin browsers">
+        <a class="button primary" href="{{ url_for('users') }}">Users</a>
+        <a class="button" href="{{ url_for('posts_browser') }}">Posts</a>
+        <a class="button" href="{{ url_for('comments_browser') }}">Comments</a>
+    </nav>
+
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Username</th>
+                <th>Location</th>
+                <th>Created</th>
+                <th>Last Login</th>
+                <th>Login Fail Count</th>
+                <th>Last Login Status</th>
+                <th>Login Retry After</th>
+                <th>Security Fail Count</th>
+                <th>Security Last Status</th>
+                <th>Security Retry After</th>
+                <th>Status</th>
+                <th>Admin</th>
+                <th>Posts</th>
+                <th>Comments</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for user in users %}
+            <tr>
+                <td>{{ user.id }}</td>
+                <td>{{ user.username }}</td>
+                <td>{{ user.default_location }}</td>
+                <td>{{ user.created_at }}</td>
+                <td>{{ user.last_login or '—' }}</td>
+                <td>{{ user.login_fail_count }}</td>
+                <td>{{ user.login_last_attempt_status }}</td>
+                <td>{{ user.login_retry_after_datetime or '—' }}</td>
+                <td>{{ user.security_fail_count }}</td>
+                <td>{{ user.security_last_attempt_status }}</td>
+                <td>{{ user.security_retry_after_datetime or '—' }}</td>
+                <td>
+                    {% if user.status == 'suspended' %}
+                        <span class="pill suspended">Suspended</span>
+                    {% else %}
+                        <span class="pill active">Active</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if user.is_admin %}
+                        <span class="pill admin">Admin</span>
+                    {% else %}
+                        <span class="pill">User</span>
+                    {% endif %}
+                </td>
+                <td><a href="{{ url_for('posts_browser', user_id=user.id) }}">{{ user.posts_count }}</a></td>
+                <td><a href="{{ url_for('comments_browser', user_id=user.id) }}">{{ user.comments_count }}</a></td>
+                <td>
+                    <div class="actions">
+                        <a class="button primary" href="/users/{{ user.id }}/edit">Edit User</a>
+                        <a class="button danger" href="/users/{{ user.id }}/delete">Delete User</a>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>

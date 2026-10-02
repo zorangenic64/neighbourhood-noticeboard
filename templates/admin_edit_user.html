@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit User</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 700px;
+            margin: 0 auto;
+            padding: 24px;
+            color: #111;
+        }
+
+        .card {
+            border: 1px solid #d0d7de;
+            border-radius: 8px;
+            padding: 20px;
+            background: #fff;
+        }
+
+        label {
+            display: block;
+            margin-top: 14px;
+            font-weight: bold;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 8px 10px;
+            margin-top: 6px;
+            box-sizing: border-box;
+            font-size: 14px;
+        }
+
+        .checkbox-row {
+            margin-top: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .checkbox-row input {
+            width: auto;
+        }
+
+        .actions {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .button {
+            display: inline-block;
+            padding: 8px 14px;
+            border: 1px solid #ccc;
+            background: #e6e6e6;
+            border-radius: 6px;
+            color: #111;
+            text-decoration: none;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .button.primary {
+            background: #dfefff;
+            border-color: #b8d4ff;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>Edit User: {{ user.username }}</h1>
+
+        <form method="post">
+            <label for="new_password">New Password</label>
+            <input id="new_password" name="new_password" type="text" placeholder="Leave blank to keep current password">
+
+            <label for="status">Status</label>
+            <select id="status" name="status">
+                <option value="active" {% if user.status == 'active' %}selected{% endif %}>Active</option>
+                <option value="suspended" {% if user.status == 'suspended' %}selected{% endif %}>Suspended</option>
+            </select>
+
+            <div class="checkbox-row">
+                <input id="is_admin" name="is_admin" type="checkbox" value="1" {% if user.is_admin %}checked{% endif %}>
+                <label for="is_admin">Administrator</label>
+            </div>
+
+            <div class="actions">
+                <button class="button primary" type="submit">Save Changes</button>
+                <a class="button" href="/users">Cancel</a>
+            </div>
+        </form>
+    </div>
+</body>
+</html>

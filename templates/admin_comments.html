@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Comments</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 1400px; margin: 0 auto; padding: 24px; color: #111; }
+        h1 { margin-bottom: 16px; }
+        .toolbar, .nav { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+        .toolbar { margin-bottom: 12px; }
+        .nav { margin-bottom: 16px; }
+        .button { display: inline-block; padding: 6px 12px; border: 1px solid #ccc; background: #e6e6e6; border-radius: 6px; color: #111; text-decoration: none; cursor: pointer; font-size: 13px; }
+        .button.primary { background: #dfefff; border-color: #b8d4ff; }
+        .button.danger { background: #f8d7da; border-color: #f5c2c7; }
+        .filter { margin: 0 0 14px; color: #444; }
+        table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        th, td { border: 1px solid #d0d7de; padding: 8px 10px; text-align: left; vertical-align: top; background: #fff; }
+        th { background: #f3f4f6; }
+        td.body { min-width: 280px; white-space: pre-wrap; }
+        @media (max-width: 900px) { body { padding: 12px; } table { display: block; overflow-x: auto; white-space: nowrap; } }
+    </style>
+</head>
+<body>
+    <h1>Administration - Comments</h1>
+    <div class="toolbar">
+        <a class="button" href="{{ request.full_path.rstrip('?') }}">Refresh</a>
+        <a class="button" href="{{ url_for('comments_browser') }}">Reset</a>
+    </div>
+    <nav class="nav" aria-label="Admin browsers">
+        <a class="button" href="{{ url_for('users') }}">Users</a>
+        <a class="button" href="{{ url_for('posts_browser') }}">Posts</a>
+        <a class="button primary" href="{{ url_for('comments_browser') }}">Comments</a>
+    </nav>
+    {% if filter_user or filter_post_id %}
+        <p class="filter">
+            {% if filter_user %}Filtered by commenter: {{ filter_user.username }}{% endif %}
+            {% if filter_post_id %}Filtered to parent post ID {{ filter_post_id }}{% endif %}
+        </p>
+    {% endif %}
+    <table>
+        <thead>
+            <tr><th>ID</th><th>Comment</th><th>Owner</th><th>Parent Post</th><th>Location</th><th>Created</th><th>Actions</th></tr>
+        </thead>
+        <tbody>
+            {% for comment in comments %}
+            <tr>
+                <td>{{ comment.id }}</td>
+                <td class="body">{{ comment.body }}</td>
+                <td><a href="{{ url_for('users', user_id=comment.author_id) }}">{{ comment.author.username }}</a></td>
+                <td><a href="{{ url_for('posts_browser', post_id=comment.post_id) }}">{{ comment.post.title }}</a></td>
+                <td>{{ comment.location }}</td>
+                <td>{{ comment.created_at }}</td>
+                <td><a class="button danger" href="{{ url_for('delete_comment', comment_id=comment.id) }}">Delete</a></td>
+            </tr>
+            {% else %}
+            <tr><td colspan="7">No comments found.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>
