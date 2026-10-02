@@ -323,6 +323,30 @@
         </div>
     </form>
 </section>
+
+<section class="account-section">
+    <header class="account-section-heading">
+        <h3>Self remove, delete my account</h3>
+    </header>
+
+    <p class="section-note">
+        you account will be delete, all your posts and their comments will be deleted and all you comments to any other posts will be delete
+    </p>
+
+    <form
+        method="post"
+        action="{{ url_for('delete_account') }}"
+        class="post-editor account-form"
+        onsubmit="return confirm('are you sure, there is no recovery possible')"
+    >
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <div class="form-actions">
+            <button type="submit" class="post-button primary-action">Delete User</button>
+            <a href="{{ url_for('home') }}" class="post-button cancel-action">Cancel</a>
+        </div>
+    </form>
+</section>
 </main>
 
 {% endblock %}

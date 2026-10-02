@@ -18,7 +18,7 @@ from werkzeug.security import (
 from models.models import db, Post, User, PostPick, Comment
 
 
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from zxcvbn import zxcvbn
 
@@ -28,7 +28,7 @@ from utils.location_data import load_location_choices
 
 from utils.proximity import post_is_within_distance
 
-from sqlalchemy import or_
+from sqlalchemy import and_, or_
 
 USERNAME_MIN_LENGTH = 3
 USERNAME_MAX_LENGTH = 25
@@ -72,10 +72,14 @@ def load_user(user_id):
 
 @app.route("/")
 def home():
+    clear_comment_state = session.pop("clear_comment_state", False)
     selected_category = request.args.get("category")
     picked_filter = request.args.get("picked")
     search_text = request.args.get("search", "").strip()
     distance = request.args.get("distance", "Any")
+    date_filter = request.args.get("date_filter", "All")
+    if date_filter not in {"All", "Last 24hr", "Last 7 Days", "Last Week"}:
+        date_filter = "All"
 
     if not current_user.is_authenticated:
         distance = "Any"
@@ -87,6 +91,40 @@ def home():
 
     if selected_category:
         query = query.filter(Post.category == selected_category)
+
+    now = datetime.utcnow()
+    if date_filter == "Last 24hr":
+        cutoff = now - timedelta(hours=24)
+        query = query.filter(
+            or_(
+                Post.created_at >= cutoff,
+                Post.comments.any(Comment.created_at >= cutoff)
+            )
+        )
+    elif date_filter == "Last 7 Days":
+        cutoff = now - timedelta(days=7)
+        query = query.filter(
+            or_(
+                Post.created_at >= cutoff,
+                Post.comments.any(Comment.created_at >= cutoff)
+            )
+        )
+    elif date_filter == "Last Week":
+        week_start = now - timedelta(days=14)
+        week_end = now - timedelta(days=7)
+        post_created_last_week = and_(
+            Post.created_at >= week_start,
+            Post.created_at < week_end
+        )
+        comment_created_last_week = Post.comments.any(
+            and_(
+                Comment.created_at >= week_start,
+                Comment.created_at < week_end
+            )
+        )
+        query = query.filter(
+            or_(post_created_last_week, comment_created_last_week)
+        )
 
     if picked_filter == "1" and current_user.is_authenticated:
         picked_post_ids = [
@@ -129,7 +167,9 @@ def home():
         picked_filter=bool(picked_filter == "1"),
         picked_post_ids=picked_post_ids,
         search_text=search_text,
-        distance=distance
+        distance=distance,
+        date_filter=date_filter,
+        clear_comment_state=clear_comment_state
     )
 
 @app.route("/login", methods=["GET", "POST"])
@@ -155,6 +195,7 @@ def login():
             db.session.commit()
         
             login_user(user)
+            session["clear_comment_state"] = True
             return redirect(url_for("home"))
 
         error = "Invalid username or password"
@@ -797,6 +838,29 @@ def account():
         locations=locations,
         current_user=current_user
     )
+
+@app.route("/account/delete", methods=["POST"])
+@login_required
+def delete_account():
+    user = current_user._get_current_object()
+    user_id = user.id
+
+    for post in Post.query.filter_by(author_id=user_id).all():
+        db.session.delete(post)
+
+    db.session.flush()
+
+    for comment in Comment.query.filter_by(author_id=user_id).all():
+        db.session.delete(comment)
+
+    for pick in PostPick.query.filter_by(user_id=user_id).all():
+        db.session.delete(pick)
+
+    db.session.delete(user)
+    db.session.commit()
+    logout_user()
+
+    return redirect(url_for("home"))
 
 
 @app.route(

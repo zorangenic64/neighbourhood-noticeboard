@@ -236,6 +236,7 @@
 </head>
 
 <body class="{% block body_class %}{% endblock %}">
+    {% block feed_header_start %}{% endblock %}
     <div class="topbar">
         <h1>Neighbourhood Notice Board</h1>
 
@@ -258,6 +259,8 @@
             {% endif %}
         </div>
     </div>
+    {% block feed_header_filters %}{% endblock %}
+    {% block feed_header_end %}{% endblock %}
 
     {% block content %}
     {% endblock %}
@@ -283,6 +286,15 @@
         }
 
         const commentScrollKey = "comment_form_scroll_y";
+
+        const clearCommentState = {{ clear_comment_state|default(false)|tojson }};
+        if (clearCommentState) {
+            Object.keys(localStorage).forEach(function (key) {
+                if (key.indexOf("comments_open_") === 0) {
+                    localStorage.removeItem(key);
+                }
+            });
+        }
 
         document.querySelectorAll(".comment-form").forEach(function (form) {
             form.addEventListener("submit", function () {

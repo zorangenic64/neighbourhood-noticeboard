@@ -6,8 +6,9 @@
 
 {% block body_class %}public-page noticeboard-page{% endblock %}
 
-{% block content %}
+{% block feed_header_start %}<div class="feed-sticky-header">{% endblock %}
 
+{% block feed_header_filters %}
 <div class="menu">
     <a href="/" class="{% if not selected_category and not picked_filter %}active{% endif %}">All</a>
 
@@ -47,10 +48,20 @@
         </select>
     {% endif %}
 
+    <select name="date_filter" class="date-filter" aria-label="Filter posts by recent activity">
+        <option value="All" {% if date_filter == 'All' %}selected{% endif %}>All</option>
+        <option value="Last 24hr" {% if date_filter == 'Last 24hr' %}selected{% endif %}>Last 24hr</option>
+        <option value="Last 7 Days" {% if date_filter == 'Last 7 Days' %}selected{% endif %}>Last 7 Days</option>
+        <option value="Last Week" {% if date_filter == 'Last Week' %}selected{% endif %}>Last Week</option>
+    </select>
+
     <button type="submit" class="post-button">Search</button>
 </form>
+{% endblock %}
 
-<hr>
+{% block feed_header_end %}</div>{% endblock %}
+
+{% block content %}
 
 {% for post in posts %}
     <div class="post">
@@ -123,7 +134,7 @@
                 class="comments-panel"
                 style="display: none;"
             >
-                {% for comment in post.comments %}
+                {% for comment in post.comments|sort(attribute='created_at', reverse=true) %}
                     <div class="comment">
                         <div class="comment-header">
                             <strong>{{ comment.author.username }}</strong>

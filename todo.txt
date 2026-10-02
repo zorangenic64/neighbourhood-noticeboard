@@ -24,7 +24,9 @@ all fixed and looks nice - stopped here evening of 20 sep
 1 oct
 - fixed cancel button, added count donw to cahr fileds on front end
 - limit back end fo chart filed lengths to ensure consistency
-
+- fioxed field lenghts ui and back end
+- completed passwrod recovery workflow
+- commited to github
 
 add counter of bad login attempts and last date time of bad login attempt
 
