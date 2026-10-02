@@ -74,6 +74,18 @@
     line-height: 1.6;
 }
 
+.post-form-page .form-display-value {
+    display: flex;
+    min-height: 46px;
+    align-items: center;
+    padding: 10px 12px;
+    border: 1px solid #d7e0e5;
+    border-radius: 7px;
+    background: #f2f5f6;
+    color: #344b5a;
+    font-size: 15px;
+}
+
 .post-form-page .form-field input[type="text"]:focus,
 .post-form-page .form-field input[type="password"]:focus,
 .post-form-page .form-field select:focus,

@@ -13,8 +13,6 @@ enahce search filter to use proximity + search string
 done up to here but forms are messed up and blocked words leaks on posts new and edit and 
 on comments new ignore and on edit says not allowed. 
 
-done up to here 
-
 
 fix forms to register, post and edit post and comment and account 
 this is about making it look nice
@@ -27,6 +25,16 @@ all fixed and looks nice - stopped here evening of 20 sep
 - fioxed field lenghts ui and back end
 - completed passwrod recovery workflow
 - commited to github
+
+2 oct morining
+- added self delete for gdpr, removes all user sposts and its comments and all users posts on any comments
+- added recent activity for search criteria
+- added navigating on first screen do not lose title bars
+- sort comments in reverse order
+- reset search on category selection
+- reset filtering and toggled comments on login
+
+
 
 add counter of bad login attempts and last date time of bad login attempt
 

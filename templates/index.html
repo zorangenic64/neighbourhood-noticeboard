@@ -72,8 +72,9 @@
 
         <div class="post-meta">
             <span class="post-meta-item">{{ post.author.username }}</span>
-            <span class="post-meta-item">{{ post.created_at.strftime('%d %b %Y %H:%M') }}</span>
             <span class="post-meta-item">{{ post.location }}</span>
+            <span class="post-meta-item">{{ post.created_at.strftime('%d %b %Y %H:%M') }}</span>
+            <span class="post-meta-item">Expires after {{ post.expires_in_days }} days</span>
             <span class="post-meta-item comment-count" aria-label="{{ post.comments|length }} comments">
                 <span aria-hidden="true">&#128172;</span> {{ post.comments|length }}
             </span>

@@ -61,6 +61,19 @@
         </div>
 
         <div class="form-field">
+            <label for="expires_in_days">Expires in</label>
+            {% if is_edit %}
+                <div class="form-display-value">{{ post.expires_in_days }} days</div>
+            {% else %}
+                <select id="expires_in_days" name="expires_in_days">
+                    {% for days in expiry_choices %}
+                        <option value="{{ days }}" {% if selected_expiry_days == days %}selected{% endif %}>{{ days }} days</option>
+                    {% endfor %}
+                </select>
+            {% endif %}
+        </div>
+
+        <div class="form-field">
             <span class="form-field-label">Comments</span>
             <div class="form-checkbox">
                 <input

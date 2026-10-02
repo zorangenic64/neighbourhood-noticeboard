@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+from random import choice
 
 from werkzeug.security import generate_password_hash
 
@@ -15,16 +16,16 @@ def seed():
             username="alice",
             password_hash=generate_password_hash("Password123!"),
             security_question="Favourite dog?",
-            security_answer_hash=generate_password_hash("Manchester"),
-            default_location="Mala"
+            security_answer_hash=generate_password_hash("mala"),
+            default_location="Manchester"
         )
 
         bob = User(
             username="bob",
             password_hash=generate_password_hash("Password123!"),
             security_question="Dog?",
-            security_answer_hash=generate_password_hash("Leeds"),
-            default_location="Mala"
+            security_answer_hash=generate_password_hash("mala"),
+            default_location="Leeds"
         )
 
         db.session.add_all([alice, bob])
@@ -243,6 +244,7 @@ def seed():
                 location=item["location"],
                 visibility=item["visibility"],
                 comments_enabled=item["comments_enabled"],
+                expires_in_days=choice((7, 14, 30)),
                 author_id=item["author_id"],
                 created_at=item["created_at"]
             )

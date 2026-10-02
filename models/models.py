@@ -103,6 +103,13 @@ class Post(db.Model):
         default=False
     )
 
+    expires_in_days = db.Column(
+        db.Integer,
+        nullable=False,
+        default=7,
+        server_default="7"
+    )
+
     created_at = db.Column(
         db.DateTime,
         default=datetime.utcnow

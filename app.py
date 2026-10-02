@@ -28,7 +28,8 @@ from utils.location_data import load_location_choices
 
 from utils.proximity import post_is_within_distance
 
-from sqlalchemy import and_, or_
+from sqlalchemy import and_, inspect, or_, text
+from threading import Lock
 
 USERNAME_MIN_LENGTH = 3
 USERNAME_MAX_LENGTH = 25
@@ -45,6 +46,7 @@ POST_BODY_MIN_LENGTH = 1
 POST_BODY_MAX_LENGTH = 1000
 COMMENT_MIN_LENGTH = 1
 COMMENT_MAX_LENGTH = 300
+POST_EXPIRY_CHOICES = (7, 14, 30)
 
 app = Flask(__name__)
 
@@ -63,6 +65,35 @@ db.init_app(app)
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = "login"
+
+_post_expiry_schema_checked = False
+_post_expiry_schema_lock = Lock()
+
+
+@app.before_request
+def ensure_post_expiry_schema():
+    global _post_expiry_schema_checked
+
+    if _post_expiry_schema_checked:
+        return
+
+    with _post_expiry_schema_lock:
+        if _post_expiry_schema_checked:
+            return
+
+        inspector = inspect(db.engine)
+        if not inspector.has_table("post"):
+            return
+
+        columns = {column["name"] for column in inspector.get_columns("post")}
+        if "expires_in_days" not in columns:
+            with db.engine.begin() as connection:
+                connection.execute(text(
+                    "ALTER TABLE post ADD COLUMN expires_in_days "
+                    "INTEGER NOT NULL DEFAULT 7"
+                ))
+
+        _post_expiry_schema_checked = True
 
 
 @login_manager.user_loader
@@ -556,7 +587,7 @@ def register():
         password = request.form["password"]
         confirm_password = request.form["confirm_password"]
         security_question = request.form["security_question"]
-        security_answer = request.form["security_answer"]
+        security_answer = request.form["security_answer"].strip().lower()
         default_location = request.form.get("default_location", "Unknown")
 
         if default_location not in locations:
@@ -599,10 +630,15 @@ def register():
 def create_post():
     locations = load_location_choices()
     error = None
+    expires_in_days = 7
 
     if request.method == "POST":
         title = request.form.get("title", "").strip()
         body = request.form.get("body", "").strip()
+        try:
+            expires_in_days = int(request.form.get("expires_in_days", "7"))
+        except (TypeError, ValueError):
+            expires_in_days = 0
         category = request.form.get("category", "")
         location = request.form.get("location", current_user.default_location)
         visibility = request.form.get("visibility", "public")
@@ -619,9 +655,13 @@ def create_post():
                     "body": "",
                     "category": category,
                     "location": current_user.default_location,
+                    "expires_in_days": expires_in_days,
                 },
                 locations=locations,
                 current_user=current_user,
+                expiry_choices=POST_EXPIRY_CHOICES,
+                selected_expiry_days=expires_in_days,
+                is_edit=False,
                 error="Post contains blocked words. Please remove the disallowed text and try again."
             )
 
@@ -631,6 +671,8 @@ def create_post():
             error = "Post title must be between 6 and 50 characters."
         elif not POST_BODY_MIN_LENGTH <= len(body) <= POST_BODY_MAX_LENGTH:
             error = "Post description must be between 1 and 1000 characters."
+        elif expires_in_days not in POST_EXPIRY_CHOICES:
+            error = "Expiry must be 7, 14, or 30 days."
         else:
             post = Post(
                 title=title,
@@ -639,6 +681,7 @@ def create_post():
                 location=location,
                 visibility=visibility,
                 comments_enabled=comments_enabled,
+                expires_in_days=expires_in_days,
                 author_id=current_user.id
             )
             db.session.add(post)
@@ -650,6 +693,9 @@ def create_post():
         post=None,
         locations=locations,
         current_user=current_user,
+        expiry_choices=POST_EXPIRY_CHOICES,
+        selected_expiry_days=expires_in_days,
+        is_edit=False,
         error=error
     )
 
@@ -682,9 +728,11 @@ def edit_post(post_id):
                     "body": "",
                     "category": category,
                     "location": current_user.default_location,
+                    "expires_in_days": post.expires_in_days,
                 },
                 locations=locations,
                 current_user=current_user,
+                is_edit=True,
                 error="Post contains blocked words. Please remove the disallowed text and try again."
             )
 
@@ -710,6 +758,8 @@ def edit_post(post_id):
         post=post,
         locations=locations,
         current_user=current_user,
+        is_edit=True,
+        expiry_choices=POST_EXPIRY_CHOICES,
         error=error
     )
 
@@ -801,7 +851,7 @@ def account():
 
         elif form_type == "security":
             security_question = request.form.get("security_question", "")
-            security_answer = request.form.get("security_answer", "")
+            security_answer = request.form.get("security_answer", "").strip().lower()
 
             if not SECURITY_QUESTION_MIN_LENGTH <= len(security_question) <= SECURITY_QUESTION_MAX_LENGTH:
                 error = "Security question must be between 1 and 25 characters."
