@@ -36,7 +36,169 @@ all fixed and looks nice - stopped here evening of 20 sep
 
 
 
-add counter of bad login attempts and last date time of bad login attempt
+# Authentication and Password Recovery Throttling Specification
+## Overview
+The system shall implement progressive throttling for:
+1. User login attempts
+2. Security question answer attempts
+The purpose of this functionality is to slow down brute-force attacks while allowing legitimate users to eventually continue attempting authentication or password recovery.
+Login throttling and security question throttling shall operate independently.
+---
+# Database Fields
+## User Authentication
+| Field | Description |
+|---------|---------|
+| username | Unique user identifier |
+| password_hash | Hashed user password |
+| last_successful_login_datetime | Date/time of most recent successful login |
+| login_fail_count | Consecutive failed login attempts |
+| login_last_attempt_status | SUCCESS or FAILURE |
+| login_last_failed_datetime | Date/time of most recent failed login |
+| login_retry_after_datetime | Earliest date/time user may attempt login again |
+---
+## Password Recovery
+| Field | Description |
+|---------|---------|
+| security_answer_hash | Hashed security question answer |
+| security_fail_count | Consecutive failed security answer attempts |
+| security_last_attempt_status | SUCCESS or FAILURE |
+| security_last_failed_datetime | Date/time of most recent failed answer |
+| security_retry_after_datetime | Earliest date/time user may attempt another answer |
+---
+# Progressive Delay Schedule
+The following delay schedule shall be applied independently to login attempts and security question answer attempts.
+| Consecutive Failures | Retry Delay |
+|---------|---------|
+| 1 | 5 seconds |
+| 2 | 30 seconds |
+| 3 | 5 minutes |
+| 4 | 1 hour |
+| 5 or greater | 1 day |
+---
+# Login Processing Logic
+## Step 1 - User Submits Credentials
+The user provides:
+- Username
+- Password
+---
+## Step 2 - User Lookup
+Search for the supplied username.
+If the username does not exist:
+- Return user not found message.
+- No password validation is performed.
+---
+## Step 3 - Throttle Check
+Before validating the password, check whether login throttling is active.
+### Condition
+```text: current_datetime < login_retry_after_datetime
+```
+### If True
+Reject the login attempt.
+Return:
+```text: Login temporarily blocked. You may retry after: <login_retry_after_datetime>
+```
+No password validation shall occur while the throttle period remains active.
+---
+## Step 4 - Password Validation
+Validate supplied password against stored password hash.
+### If Password Is Correct
+Perform:
+```text
+login_fail_count = 0
+login_last_attempt_status = SUCCESS
+login_retry_after_datetime = NULL
+last_successful_login_datetime = current_datetime
+```
+Grant access to the application.
+---
+### If Password Is Incorrect
+Perform:
+```text
+login_fail_count = login_fail_count + 1
+login_last_attempt_status = FAILURE
+login_last_failed_datetime = current_datetime
+```
+Determine retry delay according to the configured schedule.
+Set:
+```text: login_retry_after_datetime = current_datetime + calculated_delay
+```
+Return:
+```text: Invalid password. You may retry after: <login_retry_after_datetime>
+```
+---
+# Password Recovery Processing Logic
+## Overview
+Password recovery consists of the following workflow:
+1. User provides username.
+2. System validates that username exists.
+3. System presents configured security question.
+4. User provides answer.
+5. If answer is correct, user is permitted to change password.
+Security question throttling shall apply before answer validation.
+---
+## Step 1 - Username Validation
+User enters username.
+If username exists:
+- Display associated security question.
+If username does not exist:
+- Return user not found message.
+---
+## Step 2 - Security Question Throttle Check
+Before validating answer, check whether throttling is active.
+### Condition
+```text: current_datetime < security_retry_after_datetime
+```
+### If True
+Reject attempt.
+Return:
+```text: Security question temporarily blocked. You may retry after: <security_retry_after_datetime>
+```
+No answer validation shall occur while throttle remains active.
+---
+## Step 3 - Answer Validation
+Validate supplied answer against stored answer hash.
+---
+### If Answer Is Correct
+Perform:
+```text
+security_fail_count = 0
+security_last_attempt_status = SUCCESS
+security_retry_after_datetime = NULL
+```
+Allow user to proceed to password change workflow.
+---
+### If Answer Is Incorrect
+Perform:
+```text
+security_fail_count = security_fail_count + 1
+security_last_attempt_status = FAILURE
+security_last_failed_datetime = current_datetime
+```
+Determine retry delay according to configured schedule.
+Set:
+```text: security_retry_after_datetime = current_datetime + calculated_delay
+```
+Return:
+```text: Incorrect answer. You may retry after: <security_retry_after_datetime>
+```
+---
+
+
+
+# Persistence Requirements
+All counters, timestamps, status flags, and retry dates shall be stored in the database.
+The implementation shall not rely on application memory for throttling calculations.
+This ensures throttling remains effective after:
+- Application restart
+- Web server restart
+- System reboot
+- Application deployment
+---
+# Time Reference
+All date and time values shall be stored using UTC timestamps.
+User-facing displays may convert timestamps into local time zones where appropriate.
+Do not chnage any other funcitonality. 
+Maintain look and feel as it is now. 
 
 
 add logging of everything
