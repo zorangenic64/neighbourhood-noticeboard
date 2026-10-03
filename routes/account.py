@@ -15,6 +15,7 @@ from utils.validation import (
     validate_security_question,
     validate_security_answer,
 )
+from utils.audit_log import write_audit_log
 
 from flask_wtf.csrf import CSRFProtect
 
@@ -67,6 +68,11 @@ def account():
                 elif not error:
                     current_user.password_hash = generate_password_hash(new_password)
                     db.session.commit()
+                    write_audit_log(
+                        "ACCOUNT_PWD_CHANGE",
+                        "SUCCESS",
+                        user_id=current_user.id,
+                    )
                     success = "Password changed successfully."
                     success_type = "password"
 
@@ -81,6 +87,11 @@ def account():
                 current_user.security_question = security_question
                 current_user.security_answer_hash = generate_password_hash(security_answer)
                 db.session.commit()
+                write_audit_log(
+                    "ACCOUNT_SECURITY_CHANGE",
+                    "SUCCESS",
+                    user_id=current_user.id,
+                )
                 success = "Security details saved successfully."
                 success_type = "security"
 
@@ -90,6 +101,12 @@ def account():
             if chosen in locations:
                 current_user.default_location = chosen
                 db.session.commit()
+                write_audit_log(
+                    "ACCOUNT_LOCATION_CHANGE",
+                    "SUCCESS",
+                    user_id=current_user.id,
+                    notes=f"location={chosen}",
+                )
                 flash("Default location saved successfully.", "account_location_success")
                 return redirect(url_for("account"))
             else:
@@ -114,6 +131,8 @@ def account():
 def delete_account():
     user = current_user._get_current_object()
     user_id = user.id
+    posts_deleted = Post.query.filter_by(author_id=user_id).count()
+    comments_deleted = Comment.query.filter_by(author_id=user_id).count()
 
     for post in Post.query.filter_by(author_id=user_id).all():
         db.session.delete(post)
@@ -129,7 +148,15 @@ def delete_account():
     db.session.delete(user)
     db.session.commit()
     logout_user()
+    write_audit_log(
+        "ACCOUNT_SELF_DELETE",
+        "SUCCESS",
+        user_id=user_id,
+        notes=(
+            f"posts_deleted={posts_deleted}; "
+            f"comments_deleted={comments_deleted}"
+        ),
+    )
 
     return redirect(url_for("home"))
-
 

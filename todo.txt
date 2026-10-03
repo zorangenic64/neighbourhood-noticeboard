@@ -219,33 +219,130 @@ Do not chnage any other funcitonality.
 Maintain look and feel as it is now. 
 
 
-add logging of everything
-add log rotation
-add admin flag to user 
-only another admin can give user admin flag or revoke
-change seed to add admin
-
+Create ADMIN app and admin can browser users, posts and comments all cross linked
 admin can delete any user
 admin can delete any post
 admin can delete any comments
+admnin can suspend useradmin can unsuspedn user
+
+****** completed on 2 cotober
+
+wrk for 3 october
+
+- fixed blocked usrenames and blocked words for posts and comments
+- add ability to have URL in posts and comment
+- add message call support to give email which is in config file 
+- add ability to recognise url and click trhough
+
+Logging
+
+Add logging as stand alone file named nnb_logs.db
+put logs in database via alchemy for now and SQLite.
+make file at startuo if it does not exist. 
+logs should rotate at max size ascount of rows and set in config named: MAX_LOG_SIZE
+keep current log pointer in database for persistance. 
+database structure is
+- log row date and time
+- log event name see below the list of events
+- event outcome either success failure or information
+- user id
+- post id
+- comment id
+- notes or payload as text to carry additional information 
+
+events are
+- LOGIN succes record user ID and if failed in notes put when is next login possible
+- LOGOUT success record in user iD 
+- REGISTER success log user ID and in notes location failed to register put in notes attempted user name
+- PWD_RECOVER_USER passwrod recover selected user chosen is success log user ID if fialed log in notes name asked for  
+- PWD_RECOVER_ANSWER passwrod revocer security answer success log user ID if failed stil log user ID as we know it and in notes put when is next try possible
+- PWD_RECOVER_PWD_SET passwrod recvoery new passowrd committed log user ID if failed still log user ID and in notes say cancelled or failed (could be disconnect)
+- POST_ADD make a post, if success log user ID and post ID - we shall not log Failures 
+- POST_EDIT edit post, if success log user id and post id
+- POST_DELETE
+- COMMENT_ADD add comment log user idf, post id and comment id 
+- COMMENT_EDIT eddit comment log user id, post id, comment id
+- COMMENT_DELETE 
+- ACCOUNT_PWD_CHANGE account page passwrod cahnged success log user id
+- ACCOUNT_SECURITY_CHANGE acocunt page securiyt quesiton answer updated log user id
+- ACCOUNT_LOCATION_CHANGE acocunt page user changes locaiton success
+- ACCOUNT_SELF_DLETE account  page user self deletes (and posts and comments)  log user id and in notes log how many posts and how many comments in total deleted)
+
+add to admin log browse showing latest log at the top
+
+
+****** completed for 3 october
 
 
 
-admin can change user password
+Admin util
+Add to admin app users sorted by name or create date or login date. Add search by user name
+Add posts sorted by date or category and date. Add search text posts title and text
+Add comments search by text and sort by date
 
-add flag to use for status, and can be active or suspended
-admin can suspend any other user admin or not but not self
+Add to admin Batch job to delete stale posts
+Delete users not logged in for 365 days
 
-suspended users can not login and get a message to email support 
+Add to admin scroll logs
 
-suspend user when 5 successive failed logins occur
-after 1st failed wait min of 1 second before allowing agian
-after 2 wait 5 seconds
-after 3 wait 1 min
-after 4 wait 1 hour
-after 5 wait one day before can try to login agian
+Add to admin report (1) of count of users by status, by posts, by comments , by location (b) posts by category by comment by location
 
-admin should have some cool reprots to look for attacks
-rate control of posts and comments
-to look for rate attacke and suspend users
+?Enter maintenance mode and log off all users and suspend login until back on line. To be used when cleaning g old posts and users or simply down the app.
 
+
+
+TESTING
+Make large pool of posts and comments for testing eg seed_test.py
+
+Regression tests
+
+⁃ changed files and what git diff
+⁃ Automate to seed test db
+⁃ Then run unit tests which can modify db calling api functions
+⁃ Then run front end tests
+⁃ Database finishes in known state
+
+
+
+
+Security
+
+Move security key from GitHub to local store
+Get certificate for https
+Don’t run flask in debug mode
+// has basic dos attack protection
+// high limit on concurrent users
+Sast dast and pen
+
+
+
+
+FEATURES FOR LATER 
+
+Store email address ??
+Activity email yes or no ??
+Password reset by email ??
+
+
+
+Background events
+
+⁃ Category filter
+⁃ Search filter
+⁃ Proximity filter
+⁃ Recency filter
+⁃ Bad word invoked and bombed in user name
+⁃ Bad word invoked and bombed in post
+⁃ Bad word invoked and bombed in comment
+⁃ Bad word invoked and failed in post edit
+⁃ Bad word invoked and failed in comment edit
+⁃ Duplicate name bombed during registration
+⁃ Weak password prevented progress in register
+⁃ Weak password prevented progress in password recovery
+⁃ Weak password prevented progress in account page password reset
+⁃ Account locked for period
+⁃ Failed login
+⁃ Failed password recover to find name
+⁃ Failed password recover to answer question
+⁃ Failed old password to change password on account page
+- public browsing as may be useeful to know who is harvesting data without logging on

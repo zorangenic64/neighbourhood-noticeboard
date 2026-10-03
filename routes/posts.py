@@ -30,7 +30,8 @@ from datetime import datetime, timedelta
 
 from zxcvbn import zxcvbn
 
-from utils.text_filter import contains_blocked_word
+from utils.posts_filter import contains_blocked_word
+from utils.audit_log import write_audit_log
 
 from utils.location_data import load_location_choices
 
@@ -205,6 +206,12 @@ def create_post():
             )
             db.session.add(post)
             db.session.commit()
+            write_audit_log(
+                "POST_ADD",
+                "SUCCESS",
+                user_id=current_user.id,
+                post_id=post.id,
+            )
             return redirect(url_for("home"))
 
     return render_template(
@@ -270,6 +277,12 @@ def edit_post(post_id):
                 error = validate_post_body(body)
         if not error:
             db.session.commit()
+            write_audit_log(
+                "POST_EDIT",
+                "SUCCESS",
+                user_id=current_user.id,
+                post_id=post.id,
+            )
             return redirect(url_for("home"))
 
     return render_template(
@@ -327,7 +340,14 @@ def delete_post(post_id):
     if post.author_id != current_user.id:
         abort(403)
 
+    deleted_post_id = post.id
     db.session.delete(post)
     db.session.commit()
+    write_audit_log(
+        "POST_DELETE",
+        "SUCCESS",
+        user_id=current_user.id,
+        post_id=deleted_post_id,
+    )
 
     return redirect(url_for("home"))

@@ -1,11 +1,22 @@
 from flask import Flask, render_template, request, redirect, url_for, flash
 from werkzeug.security import generate_password_hash
 
-from models.models import db, User, Post, Comment, PostPick
+from models.models import (
+    db,
+    User,
+    Post,
+    Comment,
+    PostPick,
+    AuditLog,
+    AuditLogRotationState,
+)
 
 
 admin_app = Flask(__name__)
 admin_app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///noticeboard.db"
+admin_app.config["SQLALCHEMY_BINDS"] = {
+    "logs": "sqlite:///nnb_logs.db",
+}
 admin_app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 admin_app.config["SECRET_KEY"] = "8c10d156b76463f19d63d50d542b558404cb744a2f15f14a72f0bdeb38e553ce"
 
@@ -14,6 +25,10 @@ db.init_app(admin_app)
 
 with admin_app.app_context():
     db.create_all()
+    db.create_all(bind_key="logs")
+    if not db.session.get(AuditLogRotationState, 1):
+        db.session.add(AuditLogRotationState(id=1))
+        db.session.commit()
 
 
 def user_summary(user):
@@ -92,6 +107,15 @@ def comments_browser():
         filter_user=filter_user,
         filter_post_id=post_id,
     )
+
+
+@admin_app.route("/logs")
+def logs_browser():
+    logs = AuditLog.query.order_by(
+        AuditLog.created_at.desc(),
+        AuditLog.id.desc(),
+    ).all()
+    return render_template("admin_logs.html", logs=logs)
 
 
 @admin_app.route("/posts/<int:post_id>/delete", methods=["GET", "POST"])

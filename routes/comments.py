@@ -26,7 +26,8 @@ from datetime import datetime, timedelta
 
 from zxcvbn import zxcvbn
 
-from utils.text_filter import contains_blocked_word
+from utils.posts_filter import contains_blocked_word
+from utils.audit_log import write_audit_log
 
 from utils.location_data import load_location_choices
 
@@ -72,6 +73,13 @@ def add_comment(post_id):
 
     db.session.add(comment)
     db.session.commit()
+    write_audit_log(
+        "COMMENT_ADD",
+        "SUCCESS",
+        user_id=current_user.id,
+        post_id=post.id,
+        comment_id=comment.id,
+    )
 
     return redirect(
         request.referrer
@@ -93,8 +101,17 @@ def delete_comment(comment_id):
     if comment.author_id != current_user.id:
         abort(403)
 
+    deleted_comment_id = comment.id
+    post_id = comment.post_id
     db.session.delete(comment)
     db.session.commit()
+    write_audit_log(
+        "COMMENT_DELETE",
+        "SUCCESS",
+        user_id=current_user.id,
+        post_id=post_id,
+        comment_id=deleted_comment_id,
+    )
 
     return redirect(
         request.referrer
@@ -138,6 +155,13 @@ def edit_comment(comment_id):
         if not error:
             comment.body = body
             db.session.commit()
+            write_audit_log(
+                "COMMENT_EDIT",
+                "SUCCESS",
+                user_id=current_user.id,
+                post_id=comment.post_id,
+                comment_id=comment.id,
+            )
             return redirect(
                 url_for("home")
             )
@@ -153,4 +177,3 @@ if __name__ == "__main__":
         host="0.0.0.0",
         port=5000,
         debug=True)
-

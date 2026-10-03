@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Logs</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 1500px; margin: 0 auto; padding: 24px; color: #111; }
+        h1 { margin-bottom: 16px; }
+        .toolbar, .nav { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+        .toolbar { margin-bottom: 12px; }
+        .nav { margin-bottom: 16px; }
+        .button { display: inline-block; padding: 6px 12px; border: 1px solid #ccc; background: #e6e6e6; border-radius: 6px; color: #111; text-decoration: none; cursor: pointer; font-size: 13px; }
+        .button.primary { background: #dfefff; border-color: #b8d4ff; }
+        table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        th, td { border: 1px solid #d0d7de; padding: 8px 10px; text-align: left; vertical-align: top; background: #fff; }
+        th { background: #f3f4f6; }
+        td.notes { min-width: 240px; white-space: pre-wrap; }
+        @media (max-width: 900px) { body { padding: 12px; } table { display: block; overflow-x: auto; white-space: nowrap; } }
+    </style>
+</head>
+<body>
+    <h1>Administration - Logs</h1>
+    <div class="toolbar">
+        <a class="button" href="{{ url_for('logs_browser') }}">Refresh Logs</a>
+    </div>
+    <nav class="nav" aria-label="Admin browsers">
+        <a class="button" href="{{ url_for('users') }}">Users</a>
+        <a class="button" href="{{ url_for('posts_browser') }}">Posts</a>
+        <a class="button" href="{{ url_for('comments_browser') }}">Comments</a>
+        <a class="button primary" href="{{ url_for('logs_browser') }}">Logs</a>
+    </nav>
+    <table>
+        <thead>
+            <tr>
+                <th>Date and Time</th><th>Event</th><th>Outcome</th>
+                <th>User ID</th><th>Post ID</th><th>Comment ID</th>
+                <th>Notes</th><th>Generation</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for log in logs %}
+            <tr>
+                <td>{{ log.created_at }}</td>
+                <td>{{ log.event_name }}</td>
+                <td>{{ log.outcome }}</td>
+                <td>{{ log.user_id if log.user_id is not none else '—' }}</td>
+                <td>{{ log.post_id if log.post_id is not none else '—' }}</td>
+                <td>{{ log.comment_id if log.comment_id is not none else '—' }}</td>
+                <td class="notes">{{ log.notes or '' }}</td>
+                <td>{{ log.generation }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="8">No log entries found.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>

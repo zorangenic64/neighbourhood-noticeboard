@@ -15,7 +15,14 @@ from werkzeug.security import (
     generate_password_hash
 )
 
-from models.models import db, Post, User, PostPick, Comment
+from models.models import (
+    db,
+    Post,
+    User,
+    PostPick,
+    Comment,
+    AuditLogRotationState,
+)
 
 
 from datetime import datetime, timedelta
@@ -23,6 +30,8 @@ from datetime import datetime, timedelta
 from zxcvbn import zxcvbn
 
 from utils.text_filter import contains_blocked_word
+from utils.url_links import linkify_urls
+from utils.audit_log import write_audit_log
 
 from utils.location_data import load_location_choices
 
@@ -34,6 +43,7 @@ import config
 
 print("Starting Flask app...")
 app = Flask(__name__)
+app.add_template_filter(linkify_urls, "linkify_urls")
 
 # Allow the split route modules to do `from app import app` while the app is
 # running as a script, so they register against the same Flask instance.
@@ -44,6 +54,9 @@ from routes import account, auth, comments, posts
 
 
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///noticeboard.db"
+app.config["SQLALCHEMY_BINDS"] = {
+    "logs": "sqlite:///nnb_logs.db",
+}
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 # Required for Flask sessions/login
@@ -52,6 +65,12 @@ app.config["SECRET_KEY"] = "8c10d156b76463f19d63d50d542b558404cb744a2f15f14a72f0
 csrf = CSRFProtect(app)
 
 db.init_app(app)
+
+with app.app_context():
+    db.create_all(bind_key="logs")
+    if not db.session.get(AuditLogRotationState, 1):
+        db.session.add(AuditLogRotationState(id=1))
+        db.session.commit()
 
 # Flask-Login setup
 login_manager = LoginManager()
@@ -117,11 +136,11 @@ def load_user(user_id):
 @app.route("/logout", methods=["POST"])
 @login_required
 def logout():
+    user_id = current_user.id
     logout_user()
+    write_audit_log("LOGOUT", "SUCCESS", user_id=user_id)
     return redirect(url_for("login"))
 
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
-
-

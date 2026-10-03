@@ -25,6 +25,7 @@ from datetime import datetime, timedelta
 from zxcvbn import zxcvbn
 
 from utils.text_filter import contains_blocked_word
+from utils.audit_log import write_audit_log
 
 from utils.location_data import load_location_choices
 
@@ -85,14 +86,34 @@ def login():
 
         if not user:
             error = "Invalid username or password"
+            write_audit_log(
+                "LOGIN",
+                "FAILURE",
+                notes=f"username={username}; next_try=not applicable",
+            )
         else:
             now = datetime.utcnow()
             if user.status == "suspended":
-                error = "Your account is suspended. Please contact support."
+                error = "Your account is suspended. Please contact support at"+SUPPORT_EMAIL
+                write_audit_log(
+                    "LOGIN",
+                    "FAILURE",
+                    user_id=user.id,
+                    notes="Account suspended; next_try=contact support",
+                )
             elif user.login_retry_after_datetime and now < user.login_retry_after_datetime:
                 error = (
                     "Login temporarily blocked. You may retry after: "
                     f"{format_retry_datetime(user.login_retry_after_datetime)}"
+                )
+                write_audit_log(
+                    "LOGIN",
+                    "FAILURE",
+                    user_id=user.id,
+                    notes=(
+                        "Login temporarily blocked; next_try="
+                        f"{format_retry_datetime(user.login_retry_after_datetime)}"
+                    ),
                 )
             elif check_password_hash(
                 user.password_hash,
@@ -107,6 +128,7 @@ def login():
                 db.session.commit()
 
                 login_user(user)
+                write_audit_log("LOGIN", "SUCCESS", user_id=user.id)
                 session["clear_comment_state"] = True
                 return redirect(url_for("home"))
             else:
@@ -117,6 +139,15 @@ def login():
                 if user.login_fail_count >= 5:
                     user.status = "suspended"
                 db.session.commit()
+                write_audit_log(
+                    "LOGIN",
+                    "FAILURE",
+                    user_id=user.id,
+                    notes=(
+                        "Invalid password; next_try="
+                        f"{format_retry_datetime(user.login_retry_after_datetime)}"
+                    ),
+                )
                 error = (
                     "Invalid password. You may retry after: "
                     f"{format_retry_datetime(user.login_retry_after_datetime)}"
@@ -201,10 +232,22 @@ def forgot_password():
                 else:
 
                     session["recovery_user_id"] = user.id
+                    write_audit_log(
+                        "PWD_RECOVER_USER",
+                        "SUCCESS",
+                        user_id=user.id,
+                    )
 
                     return redirect(
                         url_for("forgot_password_question")
                     )
+
+        if request.method == "POST" and error:
+            write_audit_log(
+                "PWD_RECOVER_USER",
+                "FAILURE",
+                notes=f"requested_username={username}; reason={error}",
+            )
 
     return render_template(
         "forgot_password.html",
@@ -213,6 +256,14 @@ def forgot_password():
 
 @app.route("/forgot-password/cancel")
 def cancel_password_recovery():
+    user_id = session.get("recovery_user_id")
+    if user_id:
+        write_audit_log(
+            "PWD_RECOVER_PWD_SET",
+            "INFORMATION",
+            user_id=user_id,
+            notes="cancelled",
+        )
     session.pop("recovery_user_id", None)
     session.pop("recovery_verified", None)
     return redirect(url_for("home"))
@@ -288,10 +339,26 @@ def forgot_password_question():
                     user.security_last_attempt_status = "SUCCESS"
                     user.security_retry_after_datetime = None
                     db.session.commit()
+                    write_audit_log(
+                        "PWD_RECOVER_ANSWER",
+                        "SUCCESS",
+                        user_id=user.id,
+                    )
                     session["recovery_verified"] = True
                     return redirect(
                         url_for("reset_password")
                     )
+
+    if request.method == "POST" and error:
+        write_audit_log(
+            "PWD_RECOVER_ANSWER",
+            "FAILURE",
+            user_id=user.id,
+            notes=(
+                f"{error}; next_try="
+                f"{format_retry_datetime(user.security_retry_after_datetime)}"
+            ),
+        )
 
     return render_template(
         "forgot_password_question.html",
@@ -456,6 +523,11 @@ def reset_password():
                 )
 
                 db.session.commit()
+                write_audit_log(
+                    "PWD_RECOVER_PWD_SET",
+                    "SUCCESS",
+                    user_id=user.id,
+                )
 
                 # Clear the recovery process
                 session.pop(
@@ -474,6 +546,14 @@ def reset_password():
                 return redirect(
                     url_for("home")
                 )
+
+    if request.method == "POST" and error:
+        write_audit_log(
+            "PWD_RECOVER_PWD_SET",
+            "FAILURE",
+            user_id=user.id,
+            notes=f"failed: {error}",
+        )
 
     return render_template(
         "reset_password.html",
@@ -499,6 +579,8 @@ def register():
             default_location = "Unknown"
 
         error = validate_username(username)
+        if not error and contains_blocked_word(username):
+            error = "That username is not allowed."
         if not error:
             error = validate_password(password)
         if not error:
@@ -522,7 +604,20 @@ def register():
                 )
                 db.session.add(user)
                 db.session.commit()
+                write_audit_log(
+                    "REGISTER",
+                    "SUCCESS",
+                    user_id=user.id,
+                    notes=f"location={default_location}",
+                )
                 return redirect(url_for("login"))
+
+        if error:
+            write_audit_log(
+                "REGISTER",
+                "FAILURE",
+                notes=f"attempted_username={username}; reason={error}",
+            )
 
     return render_template(
         "register.html",

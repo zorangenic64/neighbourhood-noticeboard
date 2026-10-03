@@ -264,3 +264,25 @@ class Comment(db.Model):
         db.ForeignKey("post.id"),
         nullable=False
     )
+
+
+class AuditLog(db.Model):
+    __bind_key__ = "logs"
+
+    id = db.Column(db.Integer, primary_key=True)
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    event_name = db.Column(db.String(40), nullable=False)
+    outcome = db.Column(db.String(20), nullable=False)
+    user_id = db.Column(db.Integer)
+    post_id = db.Column(db.Integer)
+    comment_id = db.Column(db.Integer)
+    notes = db.Column(db.Text)
+    generation = db.Column(db.Integer, nullable=False)
+
+
+class AuditLogRotationState(db.Model):
+    __bind_key__ = "logs"
+
+    id = db.Column(db.Integer, primary_key=True)
+    current_generation = db.Column(db.Integer, nullable=False, default=1)
+    rows_in_generation = db.Column(db.Integer, nullable=False, default=0)

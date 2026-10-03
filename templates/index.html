@@ -80,7 +80,7 @@
             </span>
         </div>
 
-        <p>{{ post.body }}</p>
+        <p>{{ post.body|linkify_urls }}</p>
 
         <div class="post-actions">
             {% if current_user.is_authenticated %}
@@ -148,7 +148,7 @@
                         </div>
 
                         <div class="comment-body">
-                            {{ comment.body }}
+                            {{ comment.body|linkify_urls }}
                         </div>
 
                         {% if current_user.is_authenticated and comment.author_id == current_user.id %}

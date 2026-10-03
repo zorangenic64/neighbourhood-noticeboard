@@ -31,6 +31,7 @@
         <a class="button" href="{{ url_for('users') }}">Users</a>
         <a class="button" href="{{ url_for('posts_browser') }}">Posts</a>
         <a class="button primary" href="{{ url_for('comments_browser') }}">Comments</a>
+        <a class="button" href="{{ url_for('logs_browser') }}">Logs</a>
     </nav>
     {% if filter_user or filter_post_id %}
         <p class="filter">
@@ -46,7 +47,7 @@
             {% for comment in comments %}
             <tr>
                 <td>{{ comment.id }}</td>
-                <td class="body">{{ comment.body }}</td>
+                <td class="body">{{ comment.body|linkify_urls }}</td>
                 <td><a href="{{ url_for('users', user_id=comment.author_id) }}">{{ comment.author.username }}</a></td>
                 <td><a href="{{ url_for('posts_browser', post_id=comment.post_id) }}">{{ comment.post.title }}</a></td>
                 <td>{{ comment.location }}</td>
