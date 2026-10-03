@@ -276,14 +276,18 @@ add to admin log browse showing latest log at the top
 
 
 Admin util
-Add to admin app users sorted by name or create date or login date. Add search by user name
-Add posts sorted by date or category and date. Add search text posts title and text
+Add to admin app users sorted by name or create date or login date. 
+Add search by user name
+Add posts sorted by date or category and date. 
+Add search text posts title and text
 Add comments search by text and sort by date
+add inb audit logging more info in notes as when user is deleted id may be reused so at the time log was correct but at later inspection will not be same user
+
+
 
 Add to admin Batch job to delete stale posts
 Delete users not logged in for 365 days
 
-Add to admin scroll logs
 
 Add to admin report (1) of count of users by status, by posts, by comments , by location (b) posts by category by comment by location
 
@@ -301,6 +305,11 @@ Regression tests
 ⁃ Then run unit tests which can modify db calling api functions
 ⁃ Then run front end tests
 ⁃ Database finishes in known state
+
+
+volumetrics
+
+build osme kind of automated tests to see performance of the system
 
 
 
@@ -325,7 +334,8 @@ Password reset by email ??
 
 
 
-Background events
+furhter logging but more about under the hood, protecting the system
+if throtling rate and checking 
 
 ⁃ Category filter
 ⁃ Search filter
@@ -346,3 +356,13 @@ Background events
 ⁃ Failed password recover to answer question
 ⁃ Failed old password to change password on account page
 - public browsing as may be useeful to know who is harvesting data without logging on
+
+
+
+remember these commands
+- start new terminal for admin on port 5001
+- python app.py and python admin.py
+- run seed_data.py to start afresh
+- logs are automatically created
+- to save to github commands are git add . --- git commit -m "some description" --- git push 
+
