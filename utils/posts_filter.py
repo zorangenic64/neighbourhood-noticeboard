@@ -32,14 +32,20 @@ BLOCKED_WORDS = sorted(
 )
 
 
-def contains_blocked_word(text):
-
+def find_blocked_word(text):
     if not text:
-        return False
+        return None
 
     text = text.lower()
-
-    return any(
-        blocked_word in text
-        for blocked_word in BLOCKED_WORDS
+    return next(
+        (
+            blocked_word
+            for blocked_word in BLOCKED_WORDS
+            if blocked_word in text
+        ),
+        None,
     )
+
+
+def contains_blocked_word(text):
+    return find_blocked_word(text) is not None

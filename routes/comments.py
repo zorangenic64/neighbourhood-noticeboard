@@ -26,8 +26,8 @@ from datetime import datetime, timedelta
 
 from zxcvbn import zxcvbn
 
-from utils.posts_filter import contains_blocked_word
-from utils.audit_log import write_audit_log
+from utils.posts_filter import find_blocked_word
+from utils.audit_log import write_audit_log, write_blocked_word_attempt
 
 from utils.location_data import load_location_choices
 
@@ -61,7 +61,15 @@ def add_comment(post_id):
     if validate_comment(body):
         return redirect(request.referrer or url_for("home"))
 
-    if contains_blocked_word(body):
+    blocked_phrase = find_blocked_word(body)
+    if blocked_phrase is not None:
+        write_blocked_word_attempt(
+            "COMMENT_ADD",
+            "comment_body",
+            blocked_phrase,
+            user_id=current_user.id,
+            post_id=post.id,
+        )
         return redirect(url_for("home"))
 
     comment = Comment(
@@ -146,11 +154,21 @@ def edit_comment(comment_id):
 
         else:
             error = validate_comment(body)
-            if not error and contains_blocked_word(body):
-                error = (
-                    "The comment contains a word "
-                    "that is not allowed."
-                )
+            if not error:
+                blocked_phrase = find_blocked_word(body)
+                if blocked_phrase is not None:
+                    write_blocked_word_attempt(
+                        "COMMENT_EDIT",
+                        "comment_body",
+                        blocked_phrase,
+                        user_id=current_user.id,
+                        post_id=comment.post_id,
+                        comment_id=comment.id,
+                    )
+                    error = (
+                        "The comment contains a word "
+                        "that is not allowed."
+                    )
 
         if not error:
             comment.body = body

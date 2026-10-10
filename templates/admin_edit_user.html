@@ -34,17 +34,6 @@
             font-size: 14px;
         }
 
-        .checkbox-row {
-            margin-top: 14px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .checkbox-row input {
-            width: auto;
-        }
-
         .actions {
             margin-top: 20px;
             display: flex;
@@ -83,11 +72,6 @@
                 <option value="active" {% if user.status == 'active' %}selected{% endif %}>Active</option>
                 <option value="suspended" {% if user.status == 'suspended' %}selected{% endif %}>Suspended</option>
             </select>
-
-            <div class="checkbox-row">
-                <input id="is_admin" name="is_admin" type="checkbox" value="1" {% if user.is_admin %}checked{% endif %}>
-                <label for="is_admin">Administrator</label>
-            </div>
 
             <div class="actions">
                 <button class="button primary" type="submit">Save Changes</button>

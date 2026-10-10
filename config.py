@@ -1,3 +1,15 @@
+import os
+
+
+def get_secret_key():
+    secret_key = os.environ.get("NOTICEBOARD_SECRET_KEY")
+    if not secret_key:
+        raise RuntimeError(
+            "Set the NOTICEBOARD_SECRET_KEY environment variable before starting the app."
+        )
+    return secret_key
+
+
 USERNAME_MIN_LENGTH = 3
 USERNAME_MAX_LENGTH = 25
 PASSWORD_MIN_LENGTH = 8
@@ -16,3 +28,6 @@ COMMENT_MAX_LENGTH = 300
 POST_EXPIRY_CHOICES = (7, 14, 30)
 SUPPORT_EMAIL = "zorangenic64@gmail.com"
 MAX_LOG_SIZE = 10000
+LOG_BLOCKED_WORD_ATTEMPTS = True
+DEFAULT_POST_EXPIRY_DAYS = 7
+DELETE_ACCOUNT_NOT_LOGGED_IN_DAYS = 90

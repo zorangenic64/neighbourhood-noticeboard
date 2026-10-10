@@ -39,6 +39,17 @@
             margin-bottom: 16px;
         }
 
+        .search-form {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .search-form input {
+            min-width: 240px;
+            padding: 6px 8px;
+        }
+
         table {
             width: 100%;
             border-collapse: collapse;
@@ -101,10 +112,6 @@
             background: #fde2e2;
         }
 
-        .pill.admin {
-            background: #e0dcff;
-        }
-
         @media (max-width: 900px) {
             body {
                 padding: 12px;
@@ -138,6 +145,13 @@
         <a class="button" href="{{ url_for('comments_browser') }}">Comments</a>
         <a class="button" href="{{ url_for('logs_browser') }}">Logs</a>
     </nav>
+    <form class="search-form" method="get" action="{{ url_for('users') }}">
+        {% if request.args.get('user_id') %}
+            <input type="hidden" name="user_id" value="{{ request.args.get('user_id') }}">
+        {% endif %}
+        <input type="search" name="search" value="{{ search_term }}" placeholder="Search usernames..." aria-label="Search usernames">
+        <button class="button primary" type="submit">Search</button>
+    </form>
 
     <table>
         <thead>
@@ -154,7 +168,6 @@
                 <th>Security Last Status</th>
                 <th>Security Retry After</th>
                 <th>Status</th>
-                <th>Admin</th>
                 <th>Posts</th>
                 <th>Comments</th>
                 <th>Actions</th>
@@ -179,13 +192,6 @@
                         <span class="pill suspended">Suspended</span>
                     {% else %}
                         <span class="pill active">Active</span>
-                    {% endif %}
-                </td>
-                <td>
-                    {% if user.is_admin %}
-                        <span class="pill admin">Admin</span>
-                    {% else %}
-                        <span class="pill">User</span>
                     {% endif %}
                 </td>
                 <td><a href="{{ url_for('posts_browser', user_id=user.id) }}">{{ user.posts_count }}</a></td>

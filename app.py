@@ -26,6 +26,7 @@ from models.models import (
 
 
 from datetime import datetime, timedelta
+from pathlib import Path
 
 from zxcvbn import zxcvbn
 
@@ -60,7 +61,7 @@ app.config["SQLALCHEMY_BINDS"] = {
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 # Required for Flask sessions/login
-app.config["SECRET_KEY"] = "8c10d156b76463f19d63d50d542b558404cb744a2f15f14a72f0bdeb38e553ce"
+app.config["SECRET_KEY"] = config.get_secret_key()
 
 csrf = CSRFProtect(app)
 
@@ -105,8 +106,8 @@ def ensure_post_expiry_schema():
                 ("security_last_attempt_status", "VARCHAR(20) NOT NULL DEFAULT 'SUCCESS'"),
                 ("security_last_failed_datetime", "DATETIME"),
                 ("security_retry_after_datetime", "DATETIME"),
-                ("status", "VARCHAR(20) NOT NULL DEFAULT 'active'"),
-                ("is_admin", "BOOLEAN NOT NULL DEFAULT 0")
+                ("status", "VARCHAR(20) NOT NULL DEFAULT 'active'")
+                
             ]
             with db.engine.begin() as connection:
                 for column_name, column_sql in user_schema_updates:
@@ -143,4 +144,12 @@ def logout():
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    certificate_dir = Path(__file__).resolve().parent
+    ssl_certificate = certificate_dir / "cert.pem"
+    ssl_private_key = certificate_dir / "key.pem"
+    app.run(
+        host="0.0.0.0",
+        port=5000,
+        debug=True,
+        ssl_context=(str(ssl_certificate), str(ssl_private_key)),
+    )

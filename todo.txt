@@ -271,32 +271,34 @@ events are
 add to admin log browse showing latest log at the top
 
 
-****** completed for 3 october
+****** completed for 3 october ***************************
+
+remove admin flag from user - no user can ever be admin
+also added more posts and comments
+admin util cahnges: 
+- sorting of user, posts and comments
+- added saerch field for users, posts and comments
+and enhanced aduit log via config if true to log attempts to blocked words. 
+
+*********************** 10 oct *****************************
 
 
-
-Admin util
-Add to admin app users sorted by name or create date or login date. 
-Add search by user name
-Add posts sorted by date or category and date. 
-Add search text posts title and text
-Add comments search by text and sort by date
-add inb audit logging more info in notes as when user is deleted id may be reused so at the time log was correct but at later inspection will not be same user
+Add to admin Batch jobs 
+(1) to delete posts older then created date + expiry periopd and 
+(2) delete users with login older then 365 days
 
 
+Add to admin report 
+(1) of count of users by status, by posts, by comments , by location 
+(b) posts by category by comment by location
 
-Add to admin Batch job to delete stale posts
-Delete users not logged in for 365 days
-
-
-Add to admin report (1) of count of users by status, by posts, by comments , by location (b) posts by category by comment by location
-
-?Enter maintenance mode and log off all users and suspend login until back on line. To be used when cleaning g old posts and users or simply down the app.
+some kind of page when donw in miantenance mode
 
 
 
 TESTING
-Make large pool of posts and comments for testing eg seed_test.py
+rate control to add posts 
+concurency of how many times is user logged in 
 
 Regression tests
 
@@ -331,7 +333,7 @@ FEATURES FOR LATER
 Store email address ??
 Activity email yes or no ??
 Password reset by email ??
-
+when in maintenace mode have page for maintenance
 
 
 furhter logging but more about under the hood, protecting the system

@@ -30,8 +30,8 @@ from datetime import datetime, timedelta
 
 from zxcvbn import zxcvbn
 
-from utils.posts_filter import contains_blocked_word
-from utils.audit_log import write_audit_log
+from utils.posts_filter import find_blocked_word
+from utils.audit_log import write_audit_log, write_blocked_word_attempt
 
 from utils.location_data import load_location_choices
 
@@ -167,7 +167,19 @@ def create_post():
         if location not in locations:
             location = current_user.default_location
 
-        if contains_blocked_word(title) or contains_blocked_word(body):
+        blocked_phrase = find_blocked_word(title)
+        blocked_phase = "post_title"
+        if blocked_phrase is None:
+            blocked_phrase = find_blocked_word(body)
+            blocked_phase = "post_body"
+
+        if blocked_phrase is not None:
+            write_blocked_word_attempt(
+                "POST_ADD",
+                blocked_phase,
+                blocked_phrase,
+                user_id=current_user.id,
+            )
             return render_template(
                 "post_form.html",
                 post={
@@ -246,7 +258,20 @@ def edit_post(post_id):
         if location not in locations:
             location = current_user.default_location
 
-        if contains_blocked_word(title) or contains_blocked_word(body):
+        blocked_phrase = find_blocked_word(title)
+        blocked_phase = "post_title"
+        if blocked_phrase is None:
+            blocked_phrase = find_blocked_word(body)
+            blocked_phase = "post_body"
+
+        if blocked_phrase is not None:
+            write_blocked_word_attempt(
+                "POST_EDIT",
+                blocked_phase,
+                blocked_phrase,
+                user_id=current_user.id,
+                post_id=post.id,
+            )
             return render_template(
                 "post_form.html",
                 post={

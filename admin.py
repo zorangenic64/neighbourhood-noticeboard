@@ -1,5 +1,11 @@
+import re
+
 from flask import Flask, render_template, request, redirect, url_for, flash
+from sqlalchemy import func
 from werkzeug.security import generate_password_hash
+
+import config
+from utils.url_links import linkify_urls
 
 from models.models import (
     db,
@@ -13,12 +19,15 @@ from models.models import (
 
 
 admin_app = Flask(__name__)
+admin_app.add_template_filter(linkify_urls, "linkify_urls")
 admin_app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///noticeboard.db"
 admin_app.config["SQLALCHEMY_BINDS"] = {
     "logs": "sqlite:///nnb_logs.db",
 }
 admin_app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-admin_app.config["SECRET_KEY"] = "8c10d156b76463f19d63d50d542b558404cb744a2f15f14a72f0bdeb38e553ce"
+
+
+admin_app.config["SECRET_KEY"] = config.get_secret_key()
 
 db.init_app(admin_app)
 
@@ -48,10 +57,17 @@ def user_summary(user):
         "security_last_failed_datetime": user.security_last_failed_datetime,
         "security_retry_after_datetime": user.security_retry_after_datetime,
         "status": user.status,
-        "is_admin": user.is_admin,
         "posts_count": Post.query.filter_by(author_id=user.id).count(),
         "comments_count": Comment.query.filter_by(author_id=user.id).count(),
     }
+
+
+def contains_word_prefix(text, search_term):
+    return re.search(
+        rf"(?<!\w){re.escape(search_term)}",
+        text,
+        flags=re.IGNORECASE,
+    ) is not None
 
 
 @admin_app.route("/")
@@ -62,17 +78,29 @@ def index():
 @admin_app.route("/users")
 def users():
     user_id = request.args.get("user_id", type=int)
-    user_query = User.query.order_by(User.id)
+    search_term = request.args.get("search", "").strip()
+    user_query = User.query.order_by(func.lower(User.username), User.id)
     if user_id is not None:
         user_query = user_query.filter_by(id=user_id)
-    user_rows = [user_summary(user) for user in user_query.all()]
-    return render_template("admin_users.html", users=user_rows)
+    matching_users = user_query.all()
+    if search_term:
+        matching_users = [
+            user for user in matching_users
+            if user.username.casefold().startswith(search_term.casefold())
+        ]
+    user_rows = [user_summary(user) for user in matching_users]
+    return render_template(
+        "admin_users.html",
+        users=user_rows,
+        search_term=search_term,
+    )
 
 
 @admin_app.route("/posts")
 def posts_browser():
     user_id = request.args.get("user_id", type=int)
     post_id = request.args.get("post_id", type=int)
+    search_term = request.args.get("search", "").strip()
     post_query = Post.query.order_by(Post.created_at.desc(), Post.id.desc())
 
     if user_id is not None:
@@ -81,11 +109,19 @@ def posts_browser():
         post_query = post_query.filter_by(id=post_id)
 
     filter_user = db.session.get(User, user_id) if user_id is not None else None
+    matching_posts = post_query.all()
+    if search_term:
+        matching_posts = [
+            post for post in matching_posts
+            if contains_word_prefix(post.title, search_term)
+            or contains_word_prefix(post.body, search_term)
+        ]
     return render_template(
         "admin_posts.html",
-        posts=post_query.all(),
+        posts=matching_posts,
         filter_user=filter_user,
         filter_post_id=post_id,
+        search_term=search_term,
     )
 
 
@@ -93,6 +129,7 @@ def posts_browser():
 def comments_browser():
     user_id = request.args.get("user_id", type=int)
     post_id = request.args.get("post_id", type=int)
+    search_term = request.args.get("search", "").strip()
     comment_query = Comment.query.order_by(Comment.created_at.desc(), Comment.id.desc())
 
     if user_id is not None:
@@ -101,11 +138,18 @@ def comments_browser():
         comment_query = comment_query.filter_by(post_id=post_id)
 
     filter_user = db.session.get(User, user_id) if user_id is not None else None
+    matching_comments = comment_query.all()
+    if search_term:
+        matching_comments = [
+            comment for comment in matching_comments
+            if contains_word_prefix(comment.body, search_term)
+        ]
     return render_template(
         "admin_comments.html",
-        comments=comment_query.all(),
+        comments=matching_comments,
         filter_user=filter_user,
         filter_post_id=post_id,
+        search_term=search_term,
     )
 
 
@@ -165,14 +209,13 @@ def edit_user(user_id):
     if request.method == "POST":
         new_password = request.form.get("new_password", "").strip()
         new_status = request.form.get("status", "active")
-        is_admin = request.form.get("is_admin") == "1"
+        
 
         if new_status not in {"active", "suspended"}:
             new_status = "active"
 
         user.status = new_status
-        user.is_admin = is_admin
-
+        
         if new_password:
             user.password_hash = generate_password_hash(new_password)
 

@@ -69,3 +69,24 @@ def write_audit_log(
     finally:
         if connection is not None:
             connection.close()
+
+
+def write_blocked_word_attempt(
+    event_name,
+    phase,
+    blocked_phrase,
+    user_id=None,
+    post_id=None,
+    comment_id=None,
+):
+    if not config.LOG_BLOCKED_WORD_ATTEMPTS:
+        return
+
+    write_audit_log(
+        event_name,
+        "BLOCKED",
+        user_id=user_id,
+        post_id=post_id,
+        comment_id=comment_id,
+        notes=f"phase={phase}; matched_blocked_phrase={blocked_phrase!r}",
+    )

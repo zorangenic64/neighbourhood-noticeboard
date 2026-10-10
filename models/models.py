@@ -91,11 +91,7 @@ class User(UserMixin, db.Model):
         default="active"
     )
 
-    is_admin = db.Column(
-        db.Boolean,
-        nullable=False,
-        default=False
-    )
+
 
     security_question = db.Column(
         db.String(255),
