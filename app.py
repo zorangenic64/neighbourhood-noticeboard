@@ -63,6 +63,13 @@ app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 # Required for Flask sessions/login
 app.config["SECRET_KEY"] = config.get_secret_key()
 
+
+# Session cookie security
+app.config["SESSION_COOKIE_SECURE"] = True
+app.config["SESSION_COOKIE_HTTPONLY"] = True
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+
+
 csrf = CSRFProtect(app)
 
 db.init_app(app)
@@ -126,6 +133,45 @@ def ensure_post_expiry_schema():
                     ))
 
         _post_expiry_schema_checked = True
+
+
+
+@app.after_request
+def add_security_headers(response):
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "SAMEORIGIN"
+    response.headers["Referrer-Policy"] = (
+        "strict-origin-when-cross-origin"
+    )
+    response.headers["Permissions-Policy"] = (
+        "camera=(), microphone=(), geolocation=()"
+    )
+
+    # Diagnostic CSP: reports violations without blocking page behaviour.
+    response.headers["Content-Security-Policy-Report-Only"] = (
+        "default-src 'self'; "
+        "script-src 'self' https://cdnjs.cloudflare.com; "
+        "style-src 'self'; "
+        "img-src 'self' data: https:; "
+        "font-src 'self' data: https:; "
+        "connect-src 'self'; "
+        "object-src 'none'; "
+        "base-uri 'self'; "
+        "frame-ancestors 'self'; "
+        "form-action 'self'"
+    )
+
+    # Additional browser security headers.
+    response.headers["Cross-Origin-Opener-Policy"] = "same-origin"
+    response.headers["Cross-Origin-Resource-Policy"] = "same-origin"
+    response.headers["Cross-Origin-Embedder-Policy"] = "require-corp"
+
+    # HTTPS is used by this application.
+    response.headers["Strict-Transport-Security"] = (
+        "max-age=31536000"
+    )
+
+    return response
 
 
 @login_manager.user_loader

@@ -53,7 +53,7 @@ def normalize_text(text):
     for old, new in replacements.items():
         text = text.replace(old, new)
 
-    return re.sub(r"[^a-z]", "", text)
+    return re.sub(r"[^a-z0-9]", "", text)
 
 
 def contains_blocked_word(text):
